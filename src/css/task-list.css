@@ -1,0 +1,229 @@
+/* Main Content */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-app);
+  overflow: hidden;
+}
+
+/* Task List Container */
+.task-list-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 12px 20px 20px 20px;
+  overflow-y: auto;
+}
+
+/* Task List Title */
+.task-list-title {
+  margin: 0 0 16px;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Add Task Input */
+.add-task-row {
+  display: flex;
+}
+
+.add-task-input {
+  flex: 1;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+  padding: 8px 12px;
+  font: inherit;
+  outline: none;
+}
+
+.add-task-input::placeholder {
+  color: var(--color-text-faint);
+}
+
+.add-task-input:focus {
+  border-color: var(--color-accent);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin: auto;
+}
+
+.empty-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--color-text-faintest);
+  margin-bottom: 16px;
+}
+
+.empty-message {
+  margin: 0;
+  color: var(--color-text-faint);
+}
+
+/* Task List */
+.task-list {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: none;
+}
+
+.task-list.has-tasks {
+  display: flex;
+  flex-direction: column;
+}
+
+/* display: contents keeps completedHeading/completedContainer as direct flex
+   items of .task-list when shown, so hiding this wrapper as a unit doesn't
+   disturb layout the way a nested flex container would. */
+.completed-section {
+  display: contents;
+}
+
+.completed-section.is-hidden {
+  display: none;
+}
+
+.section-heading {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+  padding: 16px 10px 4px;
+}
+
+.draggable-container {
+  border-radius: 6px;
+}
+
+/* Task Rows */
+.task {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border-radius: 6px;
+  cursor: default;
+}
+
+/* Thin centered divider between rows (95% width, like tasks2) */
+.task::after {
+  content: "";
+  display: block;
+  width: 95%;
+  height: 1px;
+  background-color: var(--color-border);
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+
+.task:hover {
+  background: var(--color-surface-hover);
+}
+
+.task-selected {
+  background: var(--color-surface-active) !important;
+}
+
+.dragging {
+  background: var(--color-surface-active);
+  transform: scale(0.95);
+}
+
+.dragover-completed {
+  background: var(--color-surface-hover);
+}
+
+.task-title {
+  flex: 1;
+  margin: 6px;
+  padding: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: 0 solid transparent;
+}
+
+.task-title-completed {
+  color: var(--color-text-faint);
+}
+
+.task-title-is-editing {
+  flex: 1;
+  margin: 6px;
+  padding: 6px;
+  background: var(--color-bg-elevated);
+  outline: 1px solid var(--color-border-strong);
+  border-radius: 4px;
+}
+
+.noTitle {
+  color: var(--color-text-faintest);
+  font-style: italic;
+}
+
+/* Row icons (inline currentColor SVGs from icons.js) */
+.icon-circle,
+.icon-trash,
+.icon-note,
+.icon-drag-drop {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-subtle);
+}
+
+.icon-circle.is-checked {
+  color: var(--color-accent);
+}
+
+.icon-circle-hover:hover,
+.icon-trash:hover {
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+/* Note indicator keeps row layout aligned even when empty */
+.icon-note {
+  width: 14px;
+  margin-left: 6px;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.display-none {
+  display: none !important;
+}
+
+/* Placeholder drop target for empty sections */
+.task-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--color-text-faintest);
+}

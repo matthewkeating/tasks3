@@ -1,0 +1,99 @@
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--color-bg-sidebar);
+  border-right: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  transition: width 0.2s ease, min-width 0.2s ease, opacity 0.2s ease;
+}
+
+.sidebar.is-hidden {
+  width: 0;
+  min-width: 0;
+  border-right: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Right sidebar mirrors the left: border and collapse direction flip to the opposite edge. */
+.sidebar-right {
+  border-right: 0;
+  border-left: 1px solid var(--color-border);
+  width: 275px;
+  min-width: 275px;
+}
+
+
+.sidebar-right.is-hidden {
+  border-left: 0;
+}
+
+.sidebar-content {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.sidebar-message {
+  padding: 8px 16px;
+  color: var(--color-text-subtle);
+  line-height: 1.5;
+}
+
+.sidebar-signin-btn {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sidebar-signin-btn:hover {
+  background: var(--color-surface-active);
+}
+
+.task-list-item {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  margin: 2px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.task-list-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.task-list-item.is-selected {
+  background: var(--color-surface-active);
+}
+
+.sidebar-add {
+  margin: auto 10px 10px 10px;
+}
+
+.sidebar-left-icon,
+.sidebar-right-icon,
+.plus-icon {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

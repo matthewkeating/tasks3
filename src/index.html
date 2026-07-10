@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+    <link href="./css/theme.css" rel="stylesheet">
+    <link href="./css/layout.css" rel="stylesheet">
+    <link href="./css/sidebar.css" rel="stylesheet">
+    <link href="./css/task-list.css" rel="stylesheet">
+    <link href="./css/task-detail.css" rel="stylesheet">
+    <link href="./css/modal.css" rel="stylesheet">
+    <title>Tasks</title>
+  </head>
+  <body>
+
+    <!-- Signin Modal Overlay -->
+    <div class="signin-modal-overlay" id="signinModalOverlay">
+      <div class="signin-modal">
+        <div class="signin-modal-content">
+          <div class="signin-modal-icon">✓</div>
+          <h1 class="signin-modal-title">Tasks</h1>
+          <p class="signin-modal-message">Sign in with your Google account to get started</p>
+          <button class="signin-modal-btn" id="signinModalBtn">Sign in with Google</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal Overlay -->
+    <div class="confirm-modal-overlay is-hidden" id="deleteConfirmModalOverlay">
+      <div class="confirm-modal">
+        <div class="confirm-modal-content">
+          <h2 class="confirm-modal-title">Delete task?</h2>
+          <p class="confirm-modal-message" id="deleteConfirmModalMessage"></p>
+          <div class="confirm-modal-actions">
+            <button class="confirm-modal-btn confirm-modal-btn-cancel" id="deleteConfirmCancelBtn">Cancel</button>
+            <button class="confirm-modal-btn confirm-modal-btn-danger" id="deleteConfirmDeleteBtn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- New List Modal Overlay -->
+    <div class="confirm-modal-overlay is-hidden" id="newListModalOverlay">
+      <div class="confirm-modal">
+        <div class="confirm-modal-content">
+          <h2 class="confirm-modal-title">New List</h2>
+          <p class="confirm-modal-message">Enter a name for your new list.</p>
+          <input type="text" class="confirm-modal-input" id="newListNameInput" placeholder="List name" spellcheck="false">
+          <div class="confirm-modal-actions">
+            <button class="confirm-modal-btn confirm-modal-btn-cancel" id="newListCancelBtn">Cancel</button>
+            <button class="confirm-modal-btn confirm-modal-btn-primary" id="newListCreateBtn">Create</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- for moving the electron app window -->
+    <header class="app-header">
+      <button id="toggleSidebarLeftBtn" class="icon-button header-left-button" type="button">
+        <span id="sidebarLeftIconContainer" class="sidebar-left-icon"></span>
+      </button>
+      <button id="toggleSidebarRightBtn" class="icon-button header-right-button" type="button">
+        <span id="sidebarRightIconContainer" class="sidebar-right-icon"></span>
+      </button>
+    </header>
+
+    <div class="app-container">
+
+      <!-- Left Sidebar -->
+      <aside class="sidebar sidebar-left" id="sidebarLeft">
+        <div class="sidebar-content">
+          <!-- Task lists/categories will go here -->
+        </div>
+        <button class="icon-button add-button sidebar-add">
+          <span id="plusIconContainer" class="plus-icon"></span>
+        </button>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="main-content">
+
+        <!-- Task List Area -->
+        <div class="task-list-container">
+          <h1 class="task-list-title" id="taskListTitle"></h1>
+          <div class="add-task-row">
+            <input id="addTaskInput" class="add-task-input" type="text" spellcheck="false"
+                   placeholder="+ Add task">
+          </div>
+          <div class="empty-state">
+            <div class="empty-icon">✓</div>
+            <p class="empty-message">Add a task to get started.</p>
+          </div>
+          <div class="task-list" id="taskList">
+            <div class="section-heading" id="activeHeading">Tasks</div>
+            <div class="draggable-container" id="activeContainer"></div>
+            <div class="completed-section" id="completedSection">
+              <div class="section-heading" id="completedHeading">Completed</div>
+              <div class="draggable-container" id="completedContainer"></div>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right Sidebar -->
+      <aside class="sidebar sidebar-right is-hidden" id="sidebarRight">
+        <div class="sidebar-content">
+          <div class="task-detail-empty" id="taskDetailEmpty">
+            <p class="empty-message">Select a task to see its details.</p>
+          </div>
+          <div class="task-detail display-none" id="taskDetail">
+            <textarea id="taskDetailTitle" class="task-detail-title" rows="1" spellcheck="false" placeholder="Title"></textarea>
+            <textarea id="taskDetailNotes" class="task-detail-notes" placeholder="Add notes…"></textarea>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <script src="./icons.js"></script>
+    <script src="./index.js"></script>
+  </body>
+</html>

@@ -1,0 +1,99 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 14px;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* sidebar hidden: 80px from the left edge of the page */
+body:has(.sidebar-left.is-hidden) .header-left-button {
+  left: 80px;
+}
+
+/* when the sidebar is collapsed, slide the seam shut to reveal the main content color */
+body:has(.sidebar-left.is-hidden) header {
+  --sidebar-seam: 0px;
+}
+
+/* mirror of the above for the right sidebar: seam only appears while it's open */
+body:has(.sidebar-right:not(.is-hidden)) header {
+  --sidebar-seam-right: 275px;
+}
+
+/* creates space at the top of the window that allows the app window to be moved */
+header {
+  -webkit-app-region: drag;
+  height: 40px;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  /* seams match the sidebar edges: sidebar color at each end, main content
+     color in between, each with a 1px divider continuing the sidebar border */
+  --sidebar-seam: 220px;
+  --sidebar-seam-right: 0px;
+  background: linear-gradient(
+    to right,
+    var(--color-bg-sidebar) 0 calc(var(--sidebar-seam) - 1px),
+    var(--color-surface-hover) calc(var(--sidebar-seam) - 1px) var(--sidebar-seam),
+    var(--color-bg-app) var(--sidebar-seam) calc(100% - var(--sidebar-seam-right)),
+    var(--color-surface-hover) calc(100% - var(--sidebar-seam-right)) calc(100% - var(--sidebar-seam-right) + 1px),
+    var(--color-bg-sidebar) calc(100% - var(--sidebar-seam-right) + 1px)
+  );
+  background-origin: border-box;
+  transition: --sidebar-seam 0.2s ease, --sidebar-seam-right 0.2s ease;
+}
+
+/* Base icon button styles */
+.icon-button {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-subtle);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.icon-button:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.icon-button:active {
+  background: var(--color-surface-active);
+}
+
+.header-left-button {
+  -webkit-app-region: no-drag;
+  position: absolute;
+  top: 7px;
+  /* sidebar visible: sit just left of the 220px divider */
+  left: 176px;
+  transition: left 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.header-right-button {
+  -webkit-app-region: no-drag;
+  margin-top: 2px;
+  margin-left: auto;
+}
+
+.app-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  margin-top: 40px;
+}

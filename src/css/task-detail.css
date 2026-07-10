@@ -1,0 +1,47 @@
+/* Task Detail (right sidebar): editable title + notes for the selected task */
+.task-detail-empty {
+  padding: 8px 4px;
+  color: var(--color-text-faint);
+}
+
+.task-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 12px;
+}
+
+.task-detail-title {
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 6px;
+  padding: 6px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  resize: none;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.task-detail-title:focus {
+  outline: 1px solid var(--color-border-strong);
+}
+
+.task-detail-notes {
+  flex: 1;
+  min-height: 120px;
+  background: var(--color-bg-sidebar);
+  border: none;
+  color: var(--color-text-primary);
+  padding: 8px;
+  font: inherit;
+  resize: none;
+  outline: none;
+}
+
+.task-detail-notes::placeholder {
+  color: var(--color-text-faint);
+}
