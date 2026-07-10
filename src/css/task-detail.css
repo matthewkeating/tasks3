@@ -1,7 +1,12 @@
 /* Task Detail (right sidebar): editable title + notes for the selected task */
 .task-detail-empty {
+  height: 100%;
   padding: 8px 4px;
   color: var(--color-text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .task-detail {
