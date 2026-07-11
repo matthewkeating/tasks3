@@ -71,7 +71,6 @@
   background: transparent;
   color: var(--color-text-secondary);
   text-align: left;
-  cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
 

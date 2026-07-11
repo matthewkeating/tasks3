@@ -227,6 +227,8 @@ function setupTaskListEventListeners() {
     sidebarLeftContent.addEventListener('click', (event) => {
       const item = event.target.closest('.task-list-item');
       if (item) {
+        // Clear any lingering text selection from a previous inline edit.
+        window.getSelection().removeAllRanges();
         selectTaskList(item.dataset.listId);
       }
     });
