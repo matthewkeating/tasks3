@@ -62,7 +62,8 @@
 }
 
 .task-list-item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
   /* padding: 8px 16px; */
   padding: 0 10px;
@@ -95,6 +96,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   outline: 0 solid transparent;
+  flex: 1;
+  min-width: 0;
+}
+
+.task-list-item-count {
+  flex: none;
+  margin-left: 8px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  text-align: right;
 }
 
 .task-list-item-title-is-editing {

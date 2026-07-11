@@ -70,7 +70,12 @@ function getTaskListItem(list) {
   title.classList.add('task-list-item-title');
   title.textContent = list.title;
 
+  const count = document.createElement('span');
+  count.classList.add('task-list-item-count');
+  count.textContent = list.activeTaskCount ?? '';
+
   button.appendChild(title);
+  button.appendChild(count);
   return button;
 }
 
@@ -98,6 +103,15 @@ function renderTaskLists() {
     if (!isEditing && titleEl.textContent !== list.title) {
       titleEl.textContent = list.title;
     }
+    // null means the count fetch failed for this poll (see googleTasksClient.js);
+    // leave whatever's already showing rather than blanking a known-good number.
+    const countEl = button.querySelector('.task-list-item-count');
+    if (list.activeTaskCount !== null) {
+      const countText = String(list.activeTaskCount ?? '');
+      if (countEl.textContent !== countText) {
+        countEl.textContent = countText;
+      }
+    }
     button.classList.toggle('is-selected', list.id === selectedListId);
     // Moving a focused contenteditable node can disturb its active selection
     // range, so leave the row being edited wherever it currently sits.
@@ -113,6 +127,16 @@ function renderTaskListTitle() {
   if (!taskListTitle) return;
   const selectedList = taskLists.find((list) => list.id === selectedListId);
   taskListTitle.textContent = selectedList ? selectedList.title : '';
+}
+
+// tasks.js mutates its own `tasks` array (add/complete/delete) without touching
+// taskLists state, so this lets updateUI() keep the sidebar's count in sync
+// immediately rather than leaving it stale until the next poll.
+function syncSelectedListActiveCount(activeCount) {
+  const list = taskLists.find((l) => l.id === selectedListId);
+  if (!list || list.activeTaskCount === activeCount) return;
+  list.activeTaskCount = activeCount;
+  renderTaskLists();
 }
 
 async function selectTaskList(listId) {
@@ -259,6 +283,7 @@ async function handleCreateList() {
   hideNewListModal();
   try {
     const { taskList: newList } = await window.googleTasks.insertTaskList(title);
+    newList.activeTaskCount = 0;
     taskLists.push(newList);
     await selectTaskList(newList.id);
   } catch {

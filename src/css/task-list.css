@@ -35,6 +35,7 @@
 
 /* Scrollable region below the fixed title/input */
 .task-scroll-area {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -75,7 +76,10 @@
   align-items: center;
   justify-content: center;
   text-align: center;
-  margin: auto;
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .empty-icon {

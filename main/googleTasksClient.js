@@ -18,6 +18,28 @@ function normalizeTask(task) {
   };
 }
 
+// showCompleted: false excludes completed tasks server-side, so this counts only
+// active (remaining) tasks without fetching full task bodies (fields trims the payload).
+async function countActiveTasks(taskListId) {
+  const tasksApi = getTasksApi();
+  let count = 0;
+  let pageToken;
+
+  do {
+    const { data } = await tasksApi.tasks.list({
+      tasklist: taskListId,
+      maxResults: 100,
+      showCompleted: false,
+      pageToken,
+      fields: 'items(id),nextPageToken',
+    });
+    count += (data.items || []).length;
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  return count;
+}
+
 async function listTaskLists() {
   const tasksApi = getTasksApi();
   const taskLists = [];
@@ -31,6 +53,17 @@ async function listTaskLists() {
     }
     pageToken = data.nextPageToken;
   } while (pageToken);
+
+  // Each list's count is fetched independently and a failure falls back to null
+  // (rather than rejecting the whole call) so one flaky per-list request can't
+  // blank out every list's count in the sidebar—the renderer keeps the last
+  // known value displayed until a real count comes back.
+  const activeTaskCounts = await Promise.all(
+    taskLists.map((list) => countActiveTasks(list.id).catch(() => null))
+  );
+  taskLists.forEach((list, index) => {
+    list.activeTaskCount = activeTaskCounts[index];
+  });
 
   return taskLists;
 }

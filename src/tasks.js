@@ -326,6 +326,7 @@ function updateUI() {
     renderTasks();
   }
   renderTaskDetail();
+  syncSelectedListActiveCount(tasks.filter((t) => !t.completed).length);
 }
 
 // Full rebuild of both section containers from the tasks array. The array
