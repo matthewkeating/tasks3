@@ -9,6 +9,8 @@
     --color-bg-app: #1e1e1e;
     --color-bg-sidebar: #1a1a1a;
     --color-bg-elevated: #2a2a2a;
+    --color-bg-modal: #141414;
+    --color-modal-btn-cancel-bg: #3b3b3b;
     /* intentionally equal to --color-surface-hover in this theme */
     --color-border: #2d2d2d;
     --color-border-strong: #4a4a4a;
@@ -22,6 +24,7 @@
     --color-accent-hover: #3a8eef;
     --color-accent-active: #2a7edf;
     --color-danger: #d63636;
+    --color-warning: #eabd16;
     --color-overlay: rgba(0, 0, 0, 0.25);
     --color-shadow: rgba(0, 0, 0, 0.5);
   }
@@ -33,6 +36,8 @@
     --color-bg-sidebar: #f2f2f2;
     /* intentionally equal to --color-bg-app in this theme */
     --color-bg-elevated: #ffffff;
+    --color-bg-modal: #f2f2f2;
+    --color-modal-btn-cancel-bg: #e0e0e0;
     --color-border: #e2e2e2;
     --color-border-strong: #c4c4c4;
     --color-surface-hover: #ebebeb;
@@ -45,6 +50,7 @@
     --color-accent-hover: #1669d1;
     --color-accent-active: #0f5bc0;
     --color-danger: #d93025;
+    --color-warning: #eabd16;
     --color-overlay: rgba(0, 0, 0, 0.12);
     --color-shadow: rgba(0, 0, 0, 0.15);
   }

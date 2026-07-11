@@ -23,7 +23,7 @@ const deleteConfirmDeleteBtn = document.getElementById('deleteConfirmDeleteBtn')
 const deleteTaskConfirmModal = createConfirmModal({
   overlay: deleteConfirmModalOverlay,
   icon: deleteConfirmModalIcon,
-  iconMarkup: ICONS.trash,
+  iconMarkup: ICONS.warning,
   message: deleteConfirmModalMessage,
   cancelBtn: deleteConfirmCancelBtn,
   deleteBtn: deleteConfirmDeleteBtn,

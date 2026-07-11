@@ -30,7 +30,7 @@ const taskListContextMenuDelete = document.getElementById('taskListContextMenuDe
 const deleteListConfirmModal = createConfirmModal({
   overlay: deleteListConfirmModalOverlay,
   icon: deleteListConfirmModalIcon,
-  iconMarkup: ICONS.trash,
+  iconMarkup: ICONS.warning,
   message: deleteListConfirmModalMessage,
   cancelBtn: deleteListConfirmCancelBtn,
   deleteBtn: deleteListConfirmDeleteBtn,
