@@ -226,6 +226,7 @@
 /* Row icons (inline currentColor SVGs from icons.js) */
 .icon-circle,
 .icon-trash,
+.icon-edit,
 .icon-note,
 .icon-drag-drop {
   display: flex;
@@ -238,7 +239,8 @@
 }
 
 .icon-circle-hover:hover,
-.icon-trash:hover {
+.icon-trash:hover,
+.icon-edit:hover {
   color: var(--color-text-primary);
   cursor: pointer;
 }

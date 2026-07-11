@@ -81,10 +81,35 @@ function getOrderedTasks() {
 
 async function handleToggleCompleted(task) {
   const listId = selectedListId;
+  const wasCompleted = task.completed;
   task.completed = !task.completed;
+  if (wasCompleted) {
+    // Un-completing: nothing ever reorders `tasks` on a plain completed-flag
+    // flip, so without this the task snaps straight back to whatever array
+    // index it held before it was completed (its old spot, not the bottom)
+    // the instant you uncomplete it—then jumps again when the moveTask call
+    // below lands and the next poll picks up the new server-side position.
+    // Moving it here keeps the local order and the server's `position` (about
+    // to be set below) in agreement from the start. Mirrors the array rebuild
+    // handleDropOnActive does before its own call to handleMoveTask.
+    tasks = tasks.filter((t) => t.id !== task.id);
+    const lastActiveIndex = tasks.findLastIndex((t) => !t.completed);
+    tasks.splice(lastActiveIndex + 1, 0, task);
+  }
   renderTaskArea();
   try {
     await window.googleTasks.patchTask(listId, task.id, { completed: task.completed });
+    // Un-completing: the API leaves the task's pre-completion `position` field
+    // untouched, so without an explicit move the next poll (which re-sorts
+    // active tasks by `position`) would silently snap it back to wherever it
+    // sat before it was completed, instead of staying at the bottom where the
+    // local reorder above already placed it. Same fix the drag-and-drop path
+    // already applies via handleMoveTask's wasCompleted branch.
+    if (wasCompleted) {
+      const activeTasks = tasks.filter((t) => !t.completed && t.id !== task.id);
+      const previousTaskId = activeTasks.length > 0 ? activeTasks[activeTasks.length - 1].id : null;
+      await window.googleTasks.moveTask(listId, task.id, previousTaskId);
+    }
   } catch {
     await resyncAfterError(listId);
   }
@@ -374,6 +399,19 @@ function createCompleteAction(task) {
 function createQuickActions(task) {
   const quickActions = document.createElement('div');
   quickActions.classList.add('quick-actions');
+
+  // Row is already selected whenever this strip is visible (see the
+  // .task-selected gate above), so this just jumps straight to editing its
+  // notes—same behavior as the Enter shortcut (focusTaskNotesForEdit, taskDetail.js).
+  const edit = document.createElement('span');
+  edit.classList.add('icon-edit');
+  edit.innerHTML = ICONS.edit;
+  edit.setAttribute('role', 'button');
+  edit.addEventListener('click', (event) => {
+    event.stopPropagation();
+    focusTaskNotesForEdit();
+  });
+  quickActions.appendChild(edit);
 
   const trash = document.createElement('span');
   trash.classList.add('icon-trash');

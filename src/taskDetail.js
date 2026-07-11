@@ -33,6 +33,21 @@ function restoreSidebarRightState() {
   sidebarRightToggle.restore();
 }
 
+// Reveals the right sidebar if needed and focuses the notes field with its
+// full text selected, ready to be typed over. Shared by the Enter shortcut
+// (handleGlobalKeydown in index.js) and the row's edit icon (tasks.js).
+function focusTaskNotesForEdit() {
+  if (sidebarRight.classList.contains('is-hidden')) {
+    toggleSidebarRight();
+  }
+  taskDetailNotesInput.focus();
+  // .focus() alone leaves the cursor wherever it last was—select the full
+  // text instead, so typing immediately replaces the note (and an empty
+  // note just leaves the cursor at position 0, since there's nothing to
+  // select) rather than inserting mid-text.
+  taskDetailNotesInput.setSelectionRange(0, taskDetailNotesInput.value.length);
+}
+
 // Force a synchronous blur/commit of whichever detail field is focused. Called
 // before selection or the current list changes underneath the field (see
 // selectTask in tasks.js and selectTaskList in taskLists.js). Without this, the

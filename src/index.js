@@ -228,13 +228,7 @@ function handleGlobalKeydown(event) {
     // to taskDetailNotesInput once it's focused, even though it wasn't the target
     // Enter was pressed on.
     event.preventDefault();
-    if (sidebarRight.classList.contains('is-hidden')) {
-      toggleSidebarRight();
-    }
-    taskDetailNotesInput.focus();
-    // .focus() alone leaves the cursor wherever it last was (or selects all, in
-    // some browsers)—pin it to the start so this is consistent every time.
-    taskDetailNotesInput.setSelectionRange(0, 0);
+    focusTaskNotesForEdit();
     return;
   }
 
