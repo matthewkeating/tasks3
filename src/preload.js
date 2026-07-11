@@ -38,3 +38,10 @@ contextBridge.exposeInMainWorld('appMenu', {
   onSelectNext: (callback) => ipcRenderer.on('menu:select-next', callback),
   onSelectPrevious: (callback) => ipcRenderer.on('menu:select-previous', callback),
 });
+
+// The global show/hide shortcut (Cmd+Shift+') lives in main.js, outside the
+// Menu—same main-to-renderer push mechanism as appMenu, separate namespace
+// since it isn't a menu accelerator.
+contextBridge.exposeInMainWorld('appVisibility', {
+  onShown: (callback) => ipcRenderer.on('app:shown', callback),
+});

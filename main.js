@@ -58,6 +58,9 @@ app.whenReady().then(() => {
     } else {
       mainWindow.show();
       mainWindow.focus();
+      // Renderer state (selected list, tasks) is untouched by hide/show, so the
+      // app naturally reopens on the same list—only focus needs to be restored.
+      mainWindow.webContents.send('app:shown');
     }
   });
 })

@@ -136,6 +136,10 @@ function renderTaskLists() {
 
 function renderTaskListTitle() {
   if (!taskListTitle) return;
+  // Mirrors the row-title guard in renderTaskLists: a re-render triggered while
+  // the header is mid inline-edit (e.g. syncSelectedListActiveCount firing from
+  // a task completion) must not stomp on the live typed text.
+  if (taskListTitle.classList.contains('task-list-title-is-editing')) return;
   const selectedList = taskLists.find((list) => list.id === selectedListId);
   taskListTitle.textContent = selectedList ? selectedList.title : '';
 }
@@ -276,43 +280,61 @@ async function handleCreateList() {
   }
 }
 
-// Inline rename for a sidebar list title (double-click). Same contenteditable/
-// blur/Escape/Enter mechanics as beginTitleEdit (see inlineEdit.js), but list
-// titles have no blank placeholder state—an empty commit just reverts to the
-// original title.
-function beginListTitleEdit(titleSpan, list) {
-  // One-way live mirror into the read-only header while editing the selected
-  // list's title—the header (unlike the sidebar row) is never itself an edit
-  // target, so there's no reciprocal direction to wire up.
+// Inline rename shared by the sidebar row title and the header title (double-
+// click either to edit—see beginListTitleEdit and beginTaskListTitleHeaderEdit
+// below). Same contenteditable/blur/Escape/Enter mechanics as beginTitleEdit
+// (see inlineEdit.js), but list titles have no blank placeholder state—an
+// empty commit just reverts to the original title. While editing, every
+// keystroke is mirrored live into `mirrorEl` (the other element showing this
+// same list's title); on cancel/empty-commit onCommit never fires, so the
+// revert to the true title is mirrored explicitly too.
+function beginSyncedListTitleEdit(el, editingClass, mirrorEl, list) {
   const handleLiveInput = () => {
-    if (list.id === selectedListId && taskListTitle) {
-      taskListTitle.textContent = titleSpan.textContent;
-    }
+    if (mirrorEl) mirrorEl.textContent = el.textContent;
   };
 
-  beginInlineEdit(titleSpan, {
+  beginInlineEdit(el, {
     originalValue: list.title,
-    onStart: (el) => {
-      el.classList.add('task-list-item-title-is-editing');
-      el.addEventListener('input', handleLiveInput);
+    onStart: (target) => {
+      target.classList.add(editingClass);
+      target.addEventListener('input', handleLiveInput);
     },
-    onFinish: (el, typedValue) => {
-      el.removeEventListener('input', handleLiveInput);
-      el.classList.remove('task-list-item-title-is-editing');
+    onFinish: (target, typedValue) => {
+      target.removeEventListener('input', handleLiveInput);
+      target.classList.remove(editingClass);
       const finalTitle = typedValue.length === 0 ? list.title : typedValue;
-      el.textContent = finalTitle;
-      // Reverts a cancelled/emptied edit's live mirror back to the true title—
-      // onCommit won't fire in that case since finalTitle === originalValue.
-      if (list.id === selectedListId && taskListTitle) {
-        taskListTitle.textContent = finalTitle;
-      }
+      target.textContent = finalTitle;
+      if (mirrorEl) mirrorEl.textContent = finalTitle;
       return finalTitle;
     },
     onCommit: (finalTitle) => handleRenameTaskList(list, finalTitle),
   });
 }
 
+function beginListTitleEdit(titleSpan, list) {
+  // The header only ever displays the selected list's title, so it's only a
+  // valid mirror target when this row is the selected one.
+  const mirrorEl = list.id === selectedListId ? taskListTitle : null;
+  beginSyncedListTitleEdit(titleSpan, 'task-list-item-title-is-editing', mirrorEl, list);
+}
+
+// The header always shows the selected list, so its sidebar counterpart is
+// always findable by id—no selection check needed (unlike the row's case).
+function beginTaskListTitleHeaderEdit(list) {
+  const rowTitleEl = sidebarLeftContent?.querySelector(
+    `[data-list-id="${CSS.escape(list.id)}"] .task-list-item-title`,
+  ) ?? null;
+  beginSyncedListTitleEdit(taskListTitle, 'task-list-title-is-editing', rowTitleEl, list);
+}
+
 function setupTaskListEventListeners() {
+  if (taskListTitle) {
+    taskListTitle.addEventListener('dblclick', () => {
+      const list = taskLists.find((l) => l.id === selectedListId);
+      if (list) beginTaskListTitleHeaderEdit(list);
+    });
+  }
+
   if (sidebarLeftAddBtn) {
     sidebarLeftAddBtn.addEventListener('click', addList);
   }

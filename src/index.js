@@ -70,6 +70,9 @@ function setupEventListeners() {
   setupDragAndDrop();
   window.addEventListener('keydown', handleGlobalKeydown);
   setupMenuListeners();
+  // Cmd+Shift+' (main.js) brings the app back into view on whichever list it
+  // last showed; only focus needs restoring, so send it straight to the input.
+  window.appVisibility?.onShown(() => addTaskInput?.focus());
 }
 
 // Menu accelerators (main/menu.js) are the single owner of these commands; wiring
