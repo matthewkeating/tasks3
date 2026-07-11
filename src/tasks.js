@@ -14,6 +14,7 @@ const addTaskInput = document.getElementById('addTaskInput');
 const emptyState = document.querySelector('.empty-state');
 const deleteConfirmModalOverlay = document.getElementById('deleteConfirmModalOverlay');
 const deleteConfirmModalIcon = document.getElementById('deleteConfirmModalIcon');
+const deleteConfirmModalTitle = document.getElementById('deleteConfirmModalTitle');
 const deleteConfirmModalMessage = document.getElementById('deleteConfirmModalMessage');
 const deleteConfirmCancelBtn = document.getElementById('deleteConfirmCancelBtn');
 const deleteConfirmDeleteBtn = document.getElementById('deleteConfirmDeleteBtn');
@@ -24,6 +25,7 @@ const deleteTaskConfirmModal = createConfirmModal({
   overlay: deleteConfirmModalOverlay,
   icon: deleteConfirmModalIcon,
   iconMarkup: ICONS.warning,
+  title: deleteConfirmModalTitle,
   message: deleteConfirmModalMessage,
   cancelBtn: deleteConfirmCancelBtn,
   deleteBtn: deleteConfirmDeleteBtn,
@@ -31,7 +33,8 @@ const deleteTaskConfirmModal = createConfirmModal({
 });
 
 function showDeleteConfirmModal(task) {
-  deleteTaskConfirmModal.show(task, `Delete "${task.title || 'Untitled task'}"? This can't be undone.`);
+  const title = task.title || 'Untitled task';
+  deleteTaskConfirmModal.show(task, `Are you sure you want to delete "${title}"?`, `This item will be deleted immediately. You can't undo this action.`);
 }
 
 async function loadTasksForSelectedList() {

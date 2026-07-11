@@ -157,6 +157,14 @@ function setupPolling() {
 // by the native Menu (main/menu.js -> setupMenuListeners) instead of here, since a menu
 // accelerator and this keydown listener would otherwise both fire for the same combo.
 function handleGlobalKeydown(event) {
+  // While a destructive confirm modal (delete task or delete list) is open,
+  // Escape/Enter/Tab target it instead of the usual list shortcuts (which
+  // would otherwise fire underneath the modal) or the blanket Tab-suppression
+  // below (which would otherwise block tabbing between Cancel/Delete).
+  if (handleConfirmModalKeydown(event)) {
+    return;
+  }
+
   // The app has no defined tab order, so the browser's default focus-traversal
   // behavior would jump focus unpredictably between buttons/inputs; suppress it,
   // except to toggle focus between the task detail title/notes textareas, where
@@ -177,13 +185,6 @@ function handleGlobalKeydown(event) {
     if (event.key === 'Escape') {
       hideTaskListContextMenu();
     }
-    return;
-  }
-
-  // While a destructive confirm modal (delete task or delete list) is open,
-  // Escape/Enter target it instead of the usual list shortcuts (which would
-  // otherwise fire underneath the modal).
-  if (handleConfirmModalKeydown(event)) {
     return;
   }
 

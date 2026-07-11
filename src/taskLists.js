@@ -18,6 +18,7 @@ const newListCancelBtn = document.getElementById('newListCancelBtn');
 const newListCreateBtn = document.getElementById('newListCreateBtn');
 const deleteListConfirmModalOverlay = document.getElementById('deleteListConfirmModalOverlay');
 const deleteListConfirmModalIcon = document.getElementById('deleteListConfirmModalIcon');
+const deleteListConfirmModalTitle = document.getElementById('deleteListConfirmModalTitle');
 const deleteListConfirmModalMessage = document.getElementById('deleteListConfirmModalMessage');
 const deleteListConfirmCancelBtn = document.getElementById('deleteListConfirmCancelBtn');
 const deleteListConfirmDeleteBtn = document.getElementById('deleteListConfirmDeleteBtn');
@@ -31,6 +32,7 @@ const deleteListConfirmModal = createConfirmModal({
   overlay: deleteListConfirmModalOverlay,
   icon: deleteListConfirmModalIcon,
   iconMarkup: ICONS.warning,
+  title: deleteListConfirmModalTitle,
   message: deleteListConfirmModalMessage,
   cancelBtn: deleteListConfirmCancelBtn,
   deleteBtn: deleteListConfirmDeleteBtn,
@@ -38,7 +40,7 @@ const deleteListConfirmModal = createConfirmModal({
 });
 
 function showDeleteListConfirmModal(list) {
-  deleteListConfirmModal.show(list, `Delete "${list.title}"? This can't be undone.`);
+  deleteListConfirmModal.show(list, `Are you sure you want to delete "${list.title}"?`, `This item will be deleted immediately. You can't undo this action.`);
 }
 
 // The single definition of sidebar display order: task lists sorted
