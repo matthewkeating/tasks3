@@ -111,6 +111,16 @@ Most IPC calls include try/catch with fallback rendering (e.g., in `loadTasksFor
 
 User data and API responses enter the DOM via `textContent` (or `.value`), never `innerHTML`—this is inherently XSS-safe, so there's no separate escaping helper to call. `innerHTML` is only ever assigned static, trusted strings (icon markup from `icons.js`, hardcoded UI messages like the sidebar's "Loading lists…").
 
+### Offline Handling
+
+The app tracks connection state via `navigator.onLine` and `online`/`offline` window events. When offline:
+- A semi-transparent overlay covers the entire UI, blocking all interaction
+- An "Offline" message appears centered in the header (in `--color-accent`) above the overlay
+- The background poll continues to retry every 10s; when the connection restores, the overlay and message automatically disappear and fresh data begins syncing
+- All mutations (add/edit/delete task, create/rename list) are prevented by the overlay's `pointer-events: auto`
+
+No data is lost if the network drops mid-sync—errors are caught and the poll resync loop restores consistency.
+
 ### Background Sync (Polling)
 
 `pollForUpdates()` re-fetches task lists (and the selected list's tasks) every 10s via `setInterval` (started in `init()`), to pick up changes made outside the app (e.g. Google Tasks edited on another device)—there's no push/webhook mechanism, so this is the only source of truth refresh beyond direct user actions.

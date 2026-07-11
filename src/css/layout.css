@@ -91,6 +91,44 @@ header {
   margin-left: auto;
 }
 
+.offline-message {
+  position: fixed;
+  top: 13px;
+  /* When sidebar is open (220px wide), position 20px to its right */
+  left: 240px;
+  z-index: 1001;
+  color: var(--color-accent);
+  font-weight: 500;
+  font-size: 13px;
+  pointer-events: none;
+  transition: left 0.2s ease;
+}
+
+/* When sidebar is hidden, position 20px to the right of the toggle button (80px + 32px button + 20px) */
+body:has(.sidebar-left.is-hidden) .offline-message {
+  left: 118px;
+}
+
+.offline-message.is-hidden {
+  display: none;
+}
+
+.offline-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+}
+
+.offline-overlay.is-hidden {
+  display: none;
+  pointer-events: none;
+}
+
 .app-container {
   display: flex;
   flex: 1;

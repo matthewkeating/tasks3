@@ -5,6 +5,10 @@
 // detail pane); inline-edit mechanics are shared via inlineEdit.js and
 // drag-and-drop via dragDrop.js.
 
+// Connection state: true when online, false when offline.
+// Used to gate mutations and show offline indicator.
+let isOnline = navigator.onLine;
+
 // Initialize the app: update UI for initial state, set up event listeners, then fetch auth status.
 async function init() {
   initializeIcons();
@@ -13,6 +17,8 @@ async function init() {
   restoreSidebarRightState();
   restoreCompletedSectionState();
   updateUI();
+  setupConnectionTracking();
+  updateOfflineIndicator();
   setupEventListeners();
   setupPolling();
   await initGoogleTasks();
@@ -30,6 +36,30 @@ function initializeIcons() {
   }
   if (sidebarRightIconContainer) {
     sidebarRightIconContainer.innerHTML = ICONS.sidebarRight;
+  }
+}
+
+function setupConnectionTracking() {
+  window.addEventListener('online', () => {
+    isOnline = true;
+    updateOfflineIndicator();
+    // Immediately refresh data instead of waiting for the next poll cycle (10s).
+    loadTaskLists();
+  });
+  window.addEventListener('offline', () => {
+    isOnline = false;
+    updateOfflineIndicator();
+  });
+}
+
+function updateOfflineIndicator() {
+  const offlineMessage = document.getElementById('offlineMessage');
+  const offlineOverlay = document.getElementById('offlineOverlay');
+  if (offlineMessage) {
+    offlineMessage.classList.toggle('is-hidden', isOnline);
+  }
+  if (offlineOverlay) {
+    offlineOverlay.classList.toggle('is-hidden', isOnline);
   }
 }
 
@@ -97,6 +127,7 @@ async function pollForUpdates() {
   if (taskLists.length === 0) {
     selectedListId = null;
     tasks = [];
+    renderTaskListTitle();
     renderSidebarMessage('No task lists found.');
     updateUI();
     return;

@@ -13,44 +13,79 @@ function registerIpcHandlers() {
   ipcMain.handle('auth:signOut', () => auth.signOut());
 
   // Task list endpoints return wrapped responses for consistency and future extensibility.
+  // Network errors are caught here to suppress Electron's console logging—the renderer
+  // handles errors via try/catch and the poll retries automatically.
   ipcMain.handle('tasks:listTaskLists', async () => {
-    const taskLists = await googleTasksClient.listTaskLists();
-    return { taskLists };
+    try {
+      const taskLists = await googleTasksClient.listTaskLists();
+      return { taskLists };
+    } catch {
+      // Network error; return empty. Renderer shows stale data or empty state. Poll retries in 10s.
+      return { taskLists: [] };
+    }
   });
 
   ipcMain.handle('tasks:insertTaskList', async (_event, title) => {
-    const taskList = await googleTasksClient.insertTaskList(title);
-    return { taskList };
+    try {
+      const taskList = await googleTasksClient.insertTaskList(title);
+      return { taskList };
+    } catch {
+      return { taskList: null };
+    }
   });
 
   ipcMain.handle('tasks:patchTaskList', async (_event, taskListId, title) => {
-    const taskList = await googleTasksClient.patchTaskList(taskListId, title);
-    return { taskList };
+    try {
+      const taskList = await googleTasksClient.patchTaskList(taskListId, title);
+      return { taskList };
+    } catch {
+      return { taskList: null };
+    }
   });
 
   ipcMain.handle('tasks:listTasks', async (_event, taskListId) => {
-    const tasks = await googleTasksClient.listTasks(taskListId);
-    return { tasks };
+    try {
+      const tasks = await googleTasksClient.listTasks(taskListId);
+      return { tasks };
+    } catch {
+      return { tasks: [] };
+    }
   });
 
   ipcMain.handle('tasks:insertTask', async (_event, taskListId, title, previousTaskId) => {
-    const task = await googleTasksClient.insertTask(taskListId, title, previousTaskId);
-    return { task };
+    try {
+      const task = await googleTasksClient.insertTask(taskListId, title, previousTaskId);
+      return { task };
+    } catch {
+      return { task: null };
+    }
   });
 
   ipcMain.handle('tasks:patchTask', async (_event, taskListId, taskId, updates) => {
-    const task = await googleTasksClient.patchTask(taskListId, taskId, updates);
-    return { task };
+    try {
+      const task = await googleTasksClient.patchTask(taskListId, taskId, updates);
+      return { task };
+    } catch {
+      return { task: null };
+    }
   });
 
   ipcMain.handle('tasks:deleteTask', async (_event, taskListId, taskId) => {
-    await googleTasksClient.deleteTask(taskListId, taskId);
-    return { ok: true };
+    try {
+      await googleTasksClient.deleteTask(taskListId, taskId);
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
   });
 
   ipcMain.handle('tasks:moveTask', async (_event, taskListId, taskId, previousTaskId) => {
-    const task = await googleTasksClient.moveTask(taskListId, taskId, previousTaskId);
-    return { task };
+    try {
+      const task = await googleTasksClient.moveTask(taskListId, taskId, previousTaskId);
+      return { task };
+    } catch {
+      return { task: null };
+    }
   });
 }
 
