@@ -162,6 +162,7 @@ async function selectTaskList(listId) {
   selectedListId = listId;
   renderTaskLists();
   await loadTasksForSelectedList();
+  addTaskInput?.focus();
 }
 
 function toggleSidebarLeft() {

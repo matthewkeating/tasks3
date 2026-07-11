@@ -199,7 +199,11 @@ function handleGlobalKeydown(event) {
   }
 
   // While typing in an input or inline title edit, don't let list shortcuts fire.
-  if (event.target instanceof Element && event.target.closest('input, [contenteditable]')) {
+  // addTaskInput is excluded, same as isEditingSomething(): these shortcuts are held
+  // with Cmd/Ctrl rather than typed, and selectTaskList() refocuses addTaskInput on
+  // every switch, so without this exclusion the guard would swallow every Cmd+#
+  // press after the first list switch.
+  if (event.target instanceof Element && event.target !== addTaskInput && event.target.closest('input, [contenteditable]')) {
     return;
   }
 
