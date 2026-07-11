@@ -36,6 +36,7 @@
   flex: 1;
   padding: 12px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .sidebar-message {
