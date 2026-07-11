@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, nativeTheme } = require('electron');
 const path = require('node:path');
 const { registerIpcHandlers } = require('./main/ipc');
 const { buildMenu } = require('./main/menu');
@@ -17,6 +17,10 @@ function createWindow () {
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 14, y: 14 },
     ...(windowState ? { width: windowState.width, height: windowState.height, x: windowState.x, y: windowState.y } : {}),
+    show: false, // don't show until the renderer has painted, to avoid a white flash
+    // Matches theme.css's --color-bg-app so there's no white flash before first paint
+    // or while the renderer is torn down on close (BrowserWindow defaults to white).
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1e1e1e' : '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'src/preload.js'),
       contextIsolation: true,
@@ -33,6 +37,11 @@ function createWindow () {
 
   win.loadFile('src/index.html')
   Menu.setApplicationMenu(buildMenu(win))
+
+  win.once('ready-to-show', () => {
+    win.show();
+  });
+
 }
 
 app.whenReady().then(() => {
