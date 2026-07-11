@@ -56,6 +56,21 @@ async function loadTasksForSelectedList() {
 const completedSectionToggle = makePersistedToggle(completedSection, 'completedSectionHidden');
 function toggleCompletedSection() {
   completedSectionToggle.toggle();
+  // Hiding the section can hide the currently selected task (if it's completed,
+  // it's still in the DOM per renderTasks, just CSS-hidden—see the same note in
+  // selectAdjacentTask). Reselect the last active task so selection doesn't
+  // point at an invisible row; if there's no active task either, clear
+  // selection and fall back to the add-task input.
+  if (completedSection.classList.contains('is-hidden') && getSelectedTask()?.completed) {
+    const activeTasks = getOrderedTasks().filter((t) => !t.completed);
+    const lastActiveTask = activeTasks[activeTasks.length - 1];
+    if (lastActiveTask) {
+      selectTask(lastActiveTask.id);
+    } else {
+      deselectTask();
+      addTaskInput?.focus();
+    }
+  }
 }
 function restoreCompletedSectionState() {
   completedSectionToggle.restore();
