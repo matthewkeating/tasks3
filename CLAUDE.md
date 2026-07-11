@@ -27,11 +27,18 @@ Main process files are split one-per-concern (IPC wiring, auth, API client, toke
 - `main/menu.js`: Builds the native application `Menu`; menu accelerators are the single owner of app-level keyboard shortcuts (see IPC Communication below)
 
 **Renderer Process:**
-- `src/index.js`: App state (`tasks`, `taskLists`, `selectedListId`) and UI rendering logic; all DOM mutations flow through render functions
-- `src/index.html`: Static structure for header, sidebar, main task area, and empty state
-- `src/css/app.css`: Dark theme with animated sidebar collapse
 
-If `src/index.js` grows past a few hundred lines or gains a second distinct view, consider splitting state/rendering into separate modules rather than continuing to extend one file.
+Loaded as plain `<script>` tags (no bundler/module system—see `src/index.html`), so every file shares one global scope, same as `icons.js`'s global `ICONS`. Load order in `index.html` matters only in that a file must appear before another file whose top-level code runs immediately at parse time; nothing here does that, since all cross-file calls happen from within functions invoked later (after `DOMContentLoaded`). Split one-per-view/concern, same rationale as the main-process split above:
+- `src/index.js`: App shell only—`init()`, wiring up each module's `setup*EventListeners()`, background polling (`pollForUpdates`), and global keyboard shortcuts (`handleGlobalKeydown`). Owns nothing that's specific to task lists or tasks individually, since polling and keydown handling touch both.
+- `src/taskLists.js`: Left-sidebar view—state (`taskLists`, `selectedListId`, `isNewListModalOpen`), list CRUD, rename, and rendering (`renderTaskLists`)
+- `src/tasks.js`: Main task area + right-hand detail pane—state (`tasks`, `selectedTaskId`, `draggedTaskId`, `pendingDeleteTask`), task CRUD, selection, and rendering (`renderTasks`, `renderTaskDetail`)
+- `src/dragDrop.js`: Native HTML5 drag-and-drop for reordering tasks; reads/writes `tasks` state from `tasks.js`
+- `src/auth.js`: Sign-in modal and `initGoogleTasks()`/`handleSignIn()`
+- `src/inlineEdit.js`: Shared contenteditable rename mechanics (`beginInlineEdit`), used by both `beginTitleEdit` (`tasks.js`) and `beginListTitleEdit` (`taskLists.js`)
+- `src/index.html`: Static structure for header, sidebar, main task area, and empty state
+- `src/css/`: Split one-per-area (`layout`, `sidebar`, `task-list`, `task-detail`, `modal`, `theme`), each theme-aware via CSS custom properties defined in `theme.css`
+
+If any one of these files grows past a few hundred lines or gains a second distinct concern, consider splitting further rather than continuing to extend it.
 
 ## Development Workflow
 
@@ -85,7 +92,7 @@ async function selectTaskList(listId) {
 }
 ```
 
-Avoid storing DOM references; query the DOM or use event delegation when needed (see `sidebarContent` click handler).
+Static, always-present elements are cached as top-level `const`s in the module that owns them (e.g. `taskList` in `tasks.js`, `sidebarLeftContent` in `taskLists.js`). For elements that come and go with re-renders (task rows, sidebar list buttons), query the DOM or use event delegation instead (see the `sidebarLeftContent` click handler in `taskLists.js`).
 
 ### IPC Communication
 
@@ -102,7 +109,15 @@ Most IPC calls include try/catch with fallback rendering (e.g., in `loadTasksFor
 
 ### HTML Escaping
 
-Use `escapeHtml()` (defined in `index.js`) when inserting user data or API responses into the DOM. This prevents XSS.
+User data and API responses enter the DOM via `textContent` (or `.value`), never `innerHTML`—this is inherently XSS-safe, so there's no separate escaping helper to call. `innerHTML` is only ever assigned static, trusted strings (icon markup from `icons.js`, hardcoded UI messages like the sidebar's "Loading lists…").
+
+### Background Sync (Polling)
+
+`pollForUpdates()` re-fetches task lists (and the selected list's tasks) every 10s via `setInterval` (started in `init()`), to pick up changes made outside the app (e.g. Google Tasks edited on another device)—there's no push/webhook mechanism, so this is the only source of truth refresh beyond direct user actions.
+
+The poll is gated so it never disturbs in-flight local state: it skips if `!document.hasFocus()`, if `isEditingSomething()` is true, if a modal is open (`isNewListModalOpen`, `pendingDeleteTask`), or if a task is mid-drag (`draggedTaskId`). `isEditingSomething()` checks whether focus is inside an `input`/`textarea`/`[contenteditable]`—except `addTaskInput`, which is deliberately excluded: it sits outside the `#taskList` subtree that task rendering rebuilds, so a poll firing mid-type there doesn't disturb focus or typed text, unlike an in-progress rename or note edit, which live in DOM the poll actually touches.
+
+This is also why `renderTaskLists()` reconciles the sidebar's list buttons against `taskLists` (matching by `data-list-id`, updating only what changed) instead of rebuilding via `innerHTML`, unlike `renderTasks()` which still does a full teardown/rebuild each call. `renderTaskLists()` runs on every sidebar click *and* every poll tick, so a full rebuild there would destroy an in-progress inline list-title rename mid-edit; `renderTasks()` doesn't need the same treatment since the poll already skips entirely whenever `isEditingSomething()` is true.
 
 ## Google Tasks Setup
 
@@ -126,7 +141,6 @@ Tokens are cached in the system's app data folder (via `tokenStore`). Deleting c
 
 This list reflects the state of the codebase at last edit and goes stale quickly—verify against the current code (e.g. `grep` for the function, check `git log`) before relying on it, and update or remove an item once it no longer holds:
 
-- `addList()` is a stub; not yet wired to the Google Tasks API (task creation/edit/delete/reorder are wired)
-- No local persistence; all state is fetched fresh from Google Tasks on each app launch
+- No local persistence to disk; task/list data is refreshed from Google Tasks on launch and then periodically via the focus-gated background poll (see "Background Sync (Polling)" above)—there's still no offline cache
 - No error recovery UI for network failures (apart from retry buttons on critical errors)
 - Linting is not configured (see `npm run lint`)

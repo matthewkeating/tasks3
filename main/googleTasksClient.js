@@ -41,6 +41,15 @@ async function insertTaskList(title) {
   return { id: data.id, title: data.title };
 }
 
+async function patchTaskList(taskListId, title) {
+  const tasksApi = getTasksApi();
+  const { data } = await tasksApi.tasklists.patch({
+    tasklist: taskListId,
+    requestBody: { title },
+  });
+  return { id: data.id, title: data.title };
+}
+
 async function listTasks(taskListId) {
   const tasksApi = getTasksApi();
   const tasks = [];
@@ -124,4 +133,4 @@ async function moveTask(taskListId, taskId, previousTaskId) {
   return normalizeTask(data);
 }
 
-module.exports = { listTaskLists, insertTaskList, listTasks, insertTask, patchTask, deleteTask, moveTask };
+module.exports = { listTaskLists, insertTaskList, patchTaskList, listTasks, insertTask, patchTask, deleteTask, moveTask };

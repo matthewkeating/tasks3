@@ -23,6 +23,11 @@ function registerIpcHandlers() {
     return { taskList };
   });
 
+  ipcMain.handle('tasks:patchTaskList', async (_event, taskListId, title) => {
+    const taskList = await googleTasksClient.patchTaskList(taskListId, title);
+    return { taskList };
+  });
+
   ipcMain.handle('tasks:listTasks', async (_event, taskListId) => {
     const tasks = await googleTasksClient.listTasks(taskListId);
     return { tasks };

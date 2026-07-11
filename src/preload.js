@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('googleTasks', {
   signOut: () => ipcRenderer.invoke('auth:signOut'),
   listTaskLists: () => ipcRenderer.invoke('tasks:listTaskLists'),
   insertTaskList: (title) => ipcRenderer.invoke('tasks:insertTaskList', title),
+  patchTaskList: (taskListId, title) => ipcRenderer.invoke('tasks:patchTaskList', taskListId, title),
   listTasks: (taskListId) => ipcRenderer.invoke('tasks:listTasks', taskListId),
   insertTask: (taskListId, title, previousTaskId) => ipcRenderer.invoke('tasks:insertTask', taskListId, title, previousTaskId),
   patchTask: (taskListId, taskId, updates) => ipcRenderer.invoke('tasks:patchTask', taskListId, taskId, updates),

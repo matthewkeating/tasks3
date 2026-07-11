@@ -70,9 +70,6 @@
   background: transparent;
   color: var(--color-text-secondary);
   text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -83,6 +80,20 @@
 
 .task-list-item.is-selected {
   background: var(--color-surface-active);
+}
+
+.task-list-item-title {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: 0 solid transparent;
+}
+
+.task-list-item-title-is-editing {
+  background: var(--color-bg-elevated);
+  outline: 1px solid var(--color-border-strong);
+  border-radius: 4px;
 }
 
 .sidebar-add {
