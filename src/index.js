@@ -193,6 +193,17 @@ function handleGlobalKeydown(event) {
     return;
   }
 
+  // Cmd/Ctrl+1 through Cmd/Ctrl+9 to select task list by position (sorted alphabetically).
+  if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '9') {
+    const listIndex = parseInt(event.key) - 1;
+    const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+    if (listIndex < sortedLists.length) {
+      selectTaskList(sortedLists[listIndex].id);
+      event.preventDefault();
+    }
+    return;
+  }
+
   if (event.key === 'Escape') {
     deselectTask();
   }
