@@ -110,7 +110,19 @@ async function selectTaskList(listId) {
 }
 
 function toggleSidebarLeft() {
-  sidebarLeft.classList.toggle('is-hidden');
+  const isHidden = sidebarLeft.classList.toggle('is-hidden');
+  localStorage.setItem('sidebarLeftHidden', isHidden);
+}
+
+// Applies the persisted collapse state. Called synchronously from init(), before
+// the DOM's first paint, so restoring a "collapsed" sidebar doesn't visibly play
+// the 0.2s collapse transition on launch—only user-triggered toggles should animate.
+// Absent a stored value (first launch), leaves whatever index.html's markup defaults to.
+function restoreSidebarLeftState() {
+  const stored = localStorage.getItem('sidebarLeftHidden');
+  if (stored !== null) {
+    sidebarLeft.classList.toggle('is-hidden', stored === 'true');
+  }
 }
 
 function addList() {

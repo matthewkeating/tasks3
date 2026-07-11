@@ -8,6 +8,10 @@
 // Initialize the app: update UI for initial state, set up event listeners, then fetch auth status.
 async function init() {
   initializeIcons();
+  // Must run before updateUI()/first paint—see restoreSidebarLeftState in taskLists.js.
+  restoreSidebarLeftState();
+  restoreSidebarRightState();
+  restoreCompletedSectionState();
   updateUI();
   setupEventListeners();
   setupPolling();

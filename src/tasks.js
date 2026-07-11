@@ -38,11 +38,28 @@ async function loadTasksForSelectedList() {
 }
 
 function toggleSidebarRight() {
-  sidebarRight.classList.toggle('is-hidden');
+  const isHidden = sidebarRight.classList.toggle('is-hidden');
+  localStorage.setItem('sidebarRightHidden', isHidden);
 }
 
 function toggleCompletedSection() {
-  completedSection.classList.toggle('is-hidden');
+  const isHidden = completedSection.classList.toggle('is-hidden');
+  localStorage.setItem('completedSectionHidden', isHidden);
+}
+
+// See restoreSidebarLeftState in taskLists.js for why these run pre-paint from init().
+function restoreSidebarRightState() {
+  const stored = localStorage.getItem('sidebarRightHidden');
+  if (stored !== null) {
+    sidebarRight.classList.toggle('is-hidden', stored === 'true');
+  }
+}
+
+function restoreCompletedSectionState() {
+  const stored = localStorage.getItem('completedSectionHidden');
+  if (stored !== null) {
+    completedSection.classList.toggle('is-hidden', stored === 'true');
+  }
 }
 
 // ---------------------------------------------------------------------------
