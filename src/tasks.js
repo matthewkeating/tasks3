@@ -110,6 +110,12 @@ function getOrderedTasks() {
 async function handleToggleCompleted(task) {
   const listId = selectedListId;
   const wasCompleted = task.completed;
+  const wasSelected = task.id === selectedTaskId;
+  // Captured before flipping `completed` below, since completing the task
+  // removes it from this filter—these are its neighbors in the active list
+  // as it existed just before the move.
+  const activeTasks = tasks.filter((t) => !t.completed);
+  const activeIndex = activeTasks.findIndex((t) => t.id === task.id);
   task.completed = !task.completed;
   if (wasCompleted) {
     // Un-completing: nothing ever reorders `tasks` on a plain completed-flag
@@ -125,6 +131,19 @@ async function handleToggleCompleted(task) {
     tasks.splice(lastActiveIndex + 1, 0, task);
   }
   renderTaskArea();
+  // Completing the selected task moves it out of the active list, so move
+  // selection along with it: prefer the task that sat just after it, else
+  // the one just before, else fall back to addTaskInput once no active tasks
+  // remain (mirrors the reselect-on-hide logic in toggleCompletedSection).
+  if (!wasCompleted && wasSelected) {
+    const nextSelection = activeTasks[activeIndex + 1] ?? activeTasks[activeIndex - 1] ?? null;
+    if (nextSelection) {
+      selectTask(nextSelection.id);
+    } else {
+      deselectTask();
+      addTaskInput?.focus();
+    }
+  }
   try {
     await window.googleTasks.patchTask(listId, task.id, { completed: task.completed });
     // Un-completing: the API leaves the task's pre-completion `position` field
