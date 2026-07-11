@@ -137,7 +137,9 @@ async function pollForUpdates() {
   }
 
   if (!taskLists.some((list) => list.id === selectedListId)) {
-    selectedListId = taskLists[0].id;
+    // Alphabetically-first, matching sidebar order (see taskLists.js's loadTaskLists).
+    const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+    selectedListId = sortedLists[0].id;
   }
   renderTaskLists();
   await loadTasksForSelectedList();

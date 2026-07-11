@@ -65,8 +65,9 @@ async function loadTaskLists() {
   }
 
   renderTaskLists();
-  // Auto-select the first list and load its tasks.
-  await selectTaskList(taskLists[0].id);
+  // Auto-select the alphabetically-first list (matching sidebar order) and load its tasks.
+  const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+  await selectTaskList(sortedLists[0].id);
 }
 
 // Builds one sidebar list button: [title span]. The title is a dedicated child
