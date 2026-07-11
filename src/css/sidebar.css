@@ -66,6 +66,7 @@
 
 .sidebar-signin-btn:hover {
   background: var(--color-surface-active);
+  color: var(--color-text-on-active);
 }
 
 .task-list-item {
@@ -89,6 +90,7 @@
 
 .task-list-item.is-selected {
   background: var(--color-surface-active);
+  color: var(--color-text-on-active);
 }
 
 .task-list-item:focus {
@@ -117,6 +119,10 @@
   color: var(--color-text-muted);
   font-size: 12px;
   text-align: right;
+}
+
+.task-list-item.is-selected .task-list-item-count {
+  color: var(--color-text-on-active);
 }
 
 .task-list-item-title-is-editing {

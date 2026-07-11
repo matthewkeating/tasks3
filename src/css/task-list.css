@@ -191,6 +191,14 @@
   transform: scale(0.95);
 }
 
+/* --color-surface-active is a fixed saturated blue in both themes, so text
+   on top needs the fixed on-active color rather than the inherited
+   --color-text-primary (too dark against it in light mode). */
+.task-selected .task-title,
+.dragging .task-title {
+  color: var(--color-text-on-active);
+}
+
 .dragover-completed {
   background: var(--color-surface-hover);
 }
@@ -235,17 +243,37 @@
 .icon-drag-drop {
   display: flex;
   align-items: center;
-  color: var(--color-text-faint);
+  color: var(--icon-color-default);
 }
 
 .icon-circle.is-checked {
-  color: var(--color-accent);
+  color: var(--icon-color-selected);
+}
+
+/* Same fixed-on-active-blue reasoning as .task-title above, and must come
+   before the :hover rules below so hovering trash/edit inside a selected
+   row still shows the hover color, not this override. */
+.task-selected .icon-circle,
+.task-selected .icon-trash,
+.task-selected .icon-edit,
+.task-selected .icon-note,
+.task-selected .icon-drag-drop,
+.dragging .icon-circle,
+.dragging .icon-trash,
+.dragging .icon-edit,
+.dragging .icon-note,
+.dragging .icon-drag-drop {
+  color: var(--color-text-on-active);
 }
 
 .icon-circle-hover:hover,
-.icon-trash:hover,
 .icon-edit:hover {
-  color: var(--color-text-primary);
+  color: var(--icon-color-hover);
+  cursor: pointer;
+}
+
+.icon-trash:hover {
+  color: var(--icon-color-danger);
   cursor: pointer;
 }
 

@@ -21,8 +21,6 @@
     --color-text-muted: #a0a0a0;
     --color-text-faint: #707070;
     --color-accent: #0a83fe;
-    --color-accent-hover: #3a8eef;
-    --color-accent-active: #2a7edf;
     --color-danger: #d63636;
     --color-warning: #eabd16;
     --color-overlay: rgba(0, 0, 0, 0.25);
@@ -41,19 +39,31 @@
     --color-border: #e2e2e2;
     --color-border-strong: #c4c4c4;
     --color-surface-hover: #ebebeb;
-    --color-surface-active: #0078fc;
+    --color-surface-active: #0052d2;
     --color-text-primary: #1e1e1e;
     --color-text-strong: #000000;
     --color-text-muted: #6b6b6b;
     --color-text-faint: #8a8a8a;
     --color-accent: #7caeeb;
-    --color-accent-hover: #1669d1;
-    --color-accent-active: #0f5bc0;
     --color-danger: #d93025;
     --color-warning: #eabd16;
     --color-overlay: rgba(0, 0, 0, 0.12);
     --color-shadow: rgba(0, 0, 0, 0.15);
   }
+}
+
+/* Icon color aliases: same both themes, just point at the semantic ramp
+   above. Gives icon color one seam to change from, instead of scattering
+   --color-text-faint/--color-text-primary/etc. across each icon's CSS. */
+:root {
+  --icon-color-default: var(--color-text-faint);
+  --icon-color-hover: var(--color-text-primary);
+  --icon-color-selected: var(--color-accent);
+  --icon-color-danger: var(--color-danger);
+  /* Selected/active surfaces (--color-surface-active) use a fixed saturated
+     blue in both themes, so text/icons drawn on top need a fixed light color
+     rather than --color-text-primary, which is too dark against it in light mode. */
+  --color-text-on-active: #ffffff;
 }
 
 /* registered so the gradient seam can be animated (plain gradients aren't interpolable) */

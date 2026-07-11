@@ -49,7 +49,7 @@
   align-items: center;
   justify-content: center;
   font-size: 40px;
-  color: var(--color-text-faint);
+  color: var(--icon-color-default);
   margin-bottom: 12px;
 }
 
@@ -128,11 +128,11 @@
 }
 
 .signin-modal-btn:hover {
-  background: var(--color-accent-hover);
+  background: color-mix(in srgb, var(--color-accent) 85%, black);
 }
 
 .signin-modal-btn:active {
-  background: var(--color-accent-active);
+  background: color-mix(in srgb, var(--color-accent) 78%, black);
 }
 
 .confirm-modal-btn {
@@ -163,9 +163,9 @@
 }
 
 .confirm-modal-btn-primary:hover {
-  background: var(--color-accent-hover);
+  background: color-mix(in srgb, var(--color-accent) 85%, black);
 }
 
 .confirm-modal-btn-primary:active {
-  background: var(--color-accent-active);
+  background: color-mix(in srgb, var(--color-accent) 78%, black);
 }

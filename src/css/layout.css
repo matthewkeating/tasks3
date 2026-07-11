@@ -59,7 +59,7 @@ header {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--color-text-faint);
+  color: var(--icon-color-default);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -69,11 +69,12 @@ header {
 
 .icon-button:hover {
   background: var(--color-surface-hover);
-  color: var(--color-text-primary);
+  color: var(--icon-color-hover);
 }
 
 .icon-button:active {
   background: var(--color-surface-active);
+  color: var(--color-text-on-active);
 }
 
 .icon-button:focus {
