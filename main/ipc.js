@@ -43,6 +43,15 @@ function registerIpcHandlers() {
     }
   });
 
+  ipcMain.handle('tasks:deleteTaskList', async (_event, taskListId) => {
+    try {
+      await googleTasksClient.deleteTaskList(taskListId);
+      return { ok: true };
+    } catch {
+      return { ok: false };
+    }
+  });
+
   ipcMain.handle('tasks:listTasks', async (_event, taskListId) => {
     try {
       const tasks = await googleTasksClient.listTasks(taskListId);

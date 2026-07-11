@@ -4,6 +4,10 @@ let taskLists = [];
 let selectedListId = null;
 // True while the new-list modal is open; gates Escape/Enter in handleGlobalKeydown.
 let isNewListModalOpen = false;
+// List pending confirmation in the delete-list modal; null when the modal is closed.
+let pendingDeleteList = null;
+// List the right-click context menu is currently showing for; null when closed.
+let contextMenuList = null;
 
 const taskListTitle = document.getElementById('taskListTitle');
 const sidebarLeft = document.getElementById('sidebarLeft');
@@ -14,6 +18,17 @@ const newListModalOverlay = document.getElementById('newListModalOverlay');
 const newListNameInput = document.getElementById('newListNameInput');
 const newListCancelBtn = document.getElementById('newListCancelBtn');
 const newListCreateBtn = document.getElementById('newListCreateBtn');
+const deleteListConfirmModalOverlay = document.getElementById('deleteListConfirmModalOverlay');
+const deleteListConfirmModalIcon = document.getElementById('deleteListConfirmModalIcon');
+const deleteListConfirmModalMessage = document.getElementById('deleteListConfirmModalMessage');
+const deleteListConfirmCancelBtn = document.getElementById('deleteListConfirmCancelBtn');
+const deleteListConfirmDeleteBtn = document.getElementById('deleteListConfirmDeleteBtn');
+const taskListContextMenu = document.getElementById('taskListContextMenu');
+const taskListContextMenuDelete = document.getElementById('taskListContextMenuDelete');
+
+if (deleteListConfirmModalIcon) {
+  deleteListConfirmModalIcon.innerHTML = ICONS.trash;
+}
 
 function renderSidebarMessage(html) {
   if (sidebarLeftContent) {
@@ -161,6 +176,81 @@ async function handleRenameTaskList(list, newTitle) {
   }
 }
 
+// Right-click popup for a sidebar list item, with a single "Delete" option.
+function showTaskListContextMenu(list, x, y) {
+  contextMenuList = list;
+  if (!taskListContextMenu) return;
+  taskListContextMenu.classList.remove('is-hidden');
+  // Clamp to the viewport so a right-click near the window edge doesn't
+  // render the menu partially off-screen.
+  const rect = taskListContextMenu.getBoundingClientRect();
+  const left = Math.max(4, Math.min(x, window.innerWidth - rect.width - 4));
+  const top = Math.max(4, Math.min(y, window.innerHeight - rect.height - 4));
+  taskListContextMenu.style.left = `${left}px`;
+  taskListContextMenu.style.top = `${top}px`;
+}
+
+function hideTaskListContextMenu() {
+  contextMenuList = null;
+  taskListContextMenu?.classList.add('is-hidden');
+}
+
+// Deletion is destructive and irreversible via the UI (and also removes every
+// task in the list), so it's gated behind a confirmation modal—same pattern
+// as showDeleteConfirmModal in tasks.js, but scoped to lists.
+function showDeleteListConfirmModal(list) {
+  pendingDeleteList = list;
+  if (deleteListConfirmModalMessage) {
+    deleteListConfirmModalMessage.textContent = `Delete "${list.title}"? This can't be undone.`;
+  }
+  if (deleteListConfirmModalOverlay) {
+    deleteListConfirmModalOverlay.classList.remove('is-hidden');
+  }
+}
+
+function hideDeleteListConfirmModal() {
+  pendingDeleteList = null;
+  if (deleteListConfirmModalOverlay) {
+    deleteListConfirmModalOverlay.classList.add('is-hidden');
+  }
+}
+
+function confirmPendingDeleteList() {
+  const list = pendingDeleteList;
+  hideDeleteListConfirmModal();
+  if (list) handleDeleteTaskList(list);
+}
+
+// Optimistic like task deletion in tasks.js: mutate local state, re-render,
+// then fire the IPC call; on failure, re-fetch everything to resync, since
+// there's no narrower per-list resync path.
+async function handleDeleteTaskList(list) {
+  const wasSelected = selectedListId === list.id;
+  taskLists = taskLists.filter((l) => l.id !== list.id);
+
+  if (wasSelected) {
+    selectedListId = null;
+    tasks = [];
+  }
+
+  if (taskLists.length === 0) {
+    renderTaskListTitle();
+    renderSidebarMessage('No task lists found.');
+    updateUI();
+  } else {
+    renderTaskLists();
+    if (wasSelected) {
+      await selectTaskList(taskLists[0].id);
+    }
+  }
+
+  try {
+    await window.googleTasks.deleteTaskList(list.id);
+  } catch {
+    await loadTaskLists();
+  }
+}
+
 // Pessimistic like handleAddTask: the server assigns the list's id, so the
 // sidebar isn't updated until the API call resolves.
 async function handleCreateList() {
@@ -243,6 +333,47 @@ function setupTaskListEventListeners() {
         const item = event.target.closest('.task-list-item');
         const list = taskLists.find((l) => l.id === item?.dataset.listId);
         if (list) beginListTitleEdit(event.target, list);
+      }
+    });
+
+    sidebarLeftContent.addEventListener('contextmenu', (event) => {
+      const item = event.target.closest('.task-list-item');
+      if (!item) return;
+      event.preventDefault();
+      const list = taskLists.find((l) => l.id === item.dataset.listId);
+      if (list) showTaskListContextMenu(list, event.clientX, event.clientY);
+    });
+  }
+
+  // Clicking anywhere outside the context menu dismisses it. Uses mousedown
+  // (not click) so it fires before a click on another list item's own handler.
+  document.addEventListener('mousedown', (event) => {
+    if (contextMenuList && !taskListContextMenu?.contains(event.target)) {
+      hideTaskListContextMenu();
+    }
+  });
+
+  if (taskListContextMenuDelete) {
+    taskListContextMenuDelete.addEventListener('click', () => {
+      const list = contextMenuList;
+      hideTaskListContextMenu();
+      if (list) showDeleteListConfirmModal(list);
+    });
+  }
+
+  if (deleteListConfirmCancelBtn) {
+    deleteListConfirmCancelBtn.addEventListener('click', hideDeleteListConfirmModal);
+  }
+
+  if (deleteListConfirmDeleteBtn) {
+    deleteListConfirmDeleteBtn.addEventListener('click', confirmPendingDeleteList);
+  }
+
+  // Clicking the overlay backdrop (outside the modal card) cancels, same as Cancel.
+  if (deleteListConfirmModalOverlay) {
+    deleteListConfirmModalOverlay.addEventListener('click', (event) => {
+      if (event.target === deleteListConfirmModalOverlay) {
+        hideDeleteListConfirmModal();
       }
     });
   }

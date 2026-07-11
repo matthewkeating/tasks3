@@ -59,6 +59,26 @@
       </div>
     </div>
 
+    <!-- Delete List Confirmation Modal Overlay -->
+    <div class="confirm-modal-overlay is-hidden" id="deleteListConfirmModalOverlay">
+      <div class="confirm-modal">
+        <div class="confirm-modal-content">
+          <div class="confirm-modal-icon" id="deleteListConfirmModalIcon"></div>
+          <h2 class="confirm-modal-title">Delete list?</h2>
+          <p class="confirm-modal-message" id="deleteListConfirmModalMessage"></p>
+          <div class="confirm-modal-actions">
+            <button class="confirm-modal-btn confirm-modal-btn-cancel" id="deleteListConfirmCancelBtn">Cancel</button>
+            <button class="confirm-modal-btn confirm-modal-btn-danger" id="deleteListConfirmDeleteBtn">Delete</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task List Context Menu (right-click a sidebar list item) -->
+    <div class="context-menu is-hidden" id="taskListContextMenu">
+      <button class="context-menu-item context-menu-item-danger" id="taskListContextMenuDelete">Delete</button>
+    </div>
+
     <!-- for moving the electron app window -->
     <header class="app-header">
       <button id="toggleSidebarLeftBtn" class="icon-button header-left-button" type="button">

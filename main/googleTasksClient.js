@@ -50,6 +50,13 @@ async function patchTaskList(taskListId, title) {
   return { id: data.id, title: data.title };
 }
 
+// Permanent: the Tasks API has no trash/restore for deleted task lists (also
+// deletes all tasks within it).
+async function deleteTaskList(taskListId) {
+  const tasksApi = getTasksApi();
+  await tasksApi.tasklists.delete({ tasklist: taskListId });
+}
+
 async function listTasks(taskListId) {
   const tasksApi = getTasksApi();
   const tasks = [];
@@ -133,4 +140,4 @@ async function moveTask(taskListId, taskId, previousTaskId) {
   return normalizeTask(data);
 }
 
-module.exports = { listTaskLists, insertTaskList, patchTaskList, listTasks, insertTask, patchTask, deleteTask, moveTask };
+module.exports = { listTaskLists, insertTaskList, patchTaskList, deleteTaskList, listTasks, insertTask, patchTask, deleteTask, moveTask };

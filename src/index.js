@@ -113,7 +113,7 @@ function isEditingSomething() {
 async function pollForUpdates() {
   if (!document.hasFocus()) return;
   if (isEditingSomething()) return;
-  if (isNewListModalOpen || pendingDeleteTask || draggedTaskId) return;
+  if (isNewListModalOpen || pendingDeleteTask || pendingDeleteList || draggedTaskId) return;
   if (taskLists.length === 0) return;
 
   let lists;
@@ -166,6 +166,15 @@ function handleGlobalKeydown(event) {
     return;
   }
 
+  // While the context menu is open, Escape dismisses it instead of falling
+  // through to list shortcuts (e.g. Escape would otherwise deselect a task).
+  if (contextMenuList) {
+    if (event.key === 'Escape') {
+      hideTaskListContextMenu();
+    }
+    return;
+  }
+
   // While the delete confirmation modal is open, Escape/Enter target it instead of
   // the usual list shortcuts (which would otherwise fire underneath the modal).
   if (pendingDeleteTask) {
@@ -173,6 +182,16 @@ function handleGlobalKeydown(event) {
       hideDeleteConfirmModal();
     } else if (event.key === 'Enter') {
       confirmPendingDelete();
+    }
+    return;
+  }
+
+  // Same reasoning for the delete-list confirmation modal.
+  if (pendingDeleteList) {
+    if (event.key === 'Escape') {
+      hideDeleteListConfirmModal();
+    } else if (event.key === 'Enter') {
+      confirmPendingDeleteList();
     }
     return;
   }
