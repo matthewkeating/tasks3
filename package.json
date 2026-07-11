@@ -19,8 +19,8 @@
   },
   "license": "MIT",
   "dependencies": {
-    "electron-squirrel-startup": "^1.0.1",
-    "googleapis": "^160.0.0"
+    "@googleapis/tasks": "^12.0.0",
+    "electron-squirrel-startup": "^1.0.1"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.2",

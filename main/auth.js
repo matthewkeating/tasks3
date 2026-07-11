@@ -1,5 +1,5 @@
 const { shell } = require('electron');
-const { google } = require('googleapis');
+const { auth } = require('@googleapis/tasks');
 const http = require('node:http');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
@@ -79,7 +79,7 @@ function getClient() {
   if (client) return client;
 
   const { client_id, client_secret } = loadCredentials();
-  client = new google.auth.OAuth2({ clientId: client_id, clientSecret: client_secret });
+  client = new auth.OAuth2({ clientId: client_id, clientSecret: client_secret });
 
   // Listen for token refreshes (e.g., when access_token expires and refresh_token is used).
   // Save refreshed tokens immediately so the new access_token persists.

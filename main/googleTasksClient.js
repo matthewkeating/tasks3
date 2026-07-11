@@ -1,11 +1,11 @@
-const { google } = require('googleapis');
+const { tasks: createTasksApi } = require('@googleapis/tasks');
 const { getClient } = require('./auth');
 
 // Wraps the Google Tasks API, handling pagination and normalizing responses.
 // All functions return flattened arrays of normalized objects (id, title, and computed fields).
 
 function getTasksApi() {
-  return google.tasks({ version: 'v1', auth: getClient() });
+  return createTasksApi({ version: 'v1', auth: getClient() });
 }
 
 function normalizeTask(task) {
