@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, nativeTheme, globalShortcut } = require('electron');
+const { app, BrowserWindow, Menu, nativeTheme, globalShortcut, systemPreferences } = require('electron');
 const path = require('node:path');
 const { registerIpcHandlers } = require('./main/ipc');
 const { buildMenu } = require('./main/menu');
@@ -50,6 +50,12 @@ function createWindow () {
 }
 
 app.whenReady().then(() => {
+  // macOS injects its own "Enter Full Screen" item into any menu titled "View",
+  // duplicating the template's togglefullscreen role item. This user default is
+  // AppKit's supported opt-out; it must be set before the menu is built.
+  if (process.platform === 'darwin') {
+    systemPreferences.setUserDefault('NSFullScreenMenuItemEverywhere', 'boolean', false);
+  }
   registerIpcHandlers()
   createWindow()
   globalShortcut.register('Cmd+Shift+\'', () => {

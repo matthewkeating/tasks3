@@ -76,6 +76,16 @@ function restoreCompletedSectionState() {
   completedSectionToggle.restore();
 }
 
+// Word-wrap is on by default (task-list.css's .task-title base rule); this
+// class switches back to the original single-line ellipsis truncation.
+const taskTitleWrapToggle = makePersistedToggle(taskList, 'taskTitleTruncated', 'task-title-truncated');
+function toggleTaskTitleWrap() {
+  taskTitleWrapToggle.toggle();
+}
+function restoreTaskTitleWrapState() {
+  taskTitleWrapToggle.restore();
+}
+
 // ---------------------------------------------------------------------------
 // Task mutations
 //

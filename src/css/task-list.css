@@ -199,10 +199,14 @@
   flex: 1;
   margin: 5px;
   padding: 5px;
+  white-space: normal;
+  outline: 0 solid transparent;
+}
+
+.task-list.task-title-truncated .task-title {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  outline: 0 solid transparent;
 }
 
 .task-title-completed {

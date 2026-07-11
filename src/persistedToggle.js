@@ -1,13 +1,14 @@
-// Shared show/hide-with-persistence mechanics: toggle() flips the `is-hidden`
-// class on an element and mirrors the new state to localStorage; restore()
-// re-applies the persisted state. Used for the two sidebars and the completed
-// section (see taskLists.js, taskDetail.js, tasks.js), which differ only in the
-// element and the storage key.
-function makePersistedToggle(el, storageKey) {
+// Shared class-toggle-with-persistence mechanics: toggle() flips a class on an
+// element and mirrors the new state to localStorage; restore() re-applies the
+// persisted state. Defaults to the `is-hidden` class, used by the two sidebars
+// and the completed section (see taskLists.js, taskDetail.js, tasks.js); the
+// task-title word-wrap toggle (tasks.js) passes a different class since it's a
+// style switch rather than a show/hide.
+function makePersistedToggle(el, storageKey, className = 'is-hidden') {
   return {
     toggle() {
-      const isHidden = el.classList.toggle('is-hidden');
-      localStorage.setItem(storageKey, isHidden);
+      const isSet = el.classList.toggle(className);
+      localStorage.setItem(storageKey, isSet);
     },
     // Called synchronously from init(), before the DOM's first paint, so
     // restoring a "collapsed" state doesn't visibly play the collapse
@@ -16,7 +17,7 @@ function makePersistedToggle(el, storageKey) {
     restore() {
       const stored = localStorage.getItem(storageKey);
       if (stored !== null) {
-        el.classList.toggle('is-hidden', stored === 'true');
+        el.classList.toggle(className, stored === 'true');
       }
     },
   };

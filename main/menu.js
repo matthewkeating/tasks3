@@ -46,6 +46,15 @@ function buildMenu(win) {
           accelerator: 'CmdOrCtrl+Shift+C',
           click: send('menu:toggle-completed-section'),
         },
+        {
+          label: 'Toggle Word Wrap',
+          accelerator: 'CmdOrCtrl+Shift+W',
+          click: send('menu:toggle-word-wrap'),
+        },
+        { type: 'separator' },
+        // The single Full Screen entry; macOS's own auto-injected duplicate is
+        // suppressed via NSFullScreenMenuItemEverywhere in main.js.
+        { role: 'togglefullscreen' },
       ],
     },
     {

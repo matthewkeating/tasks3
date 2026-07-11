@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('appMenu', {
   onToggleLeftSidebar: (callback) => ipcRenderer.on('menu:toggle-left-sidebar', callback),
   onToggleRightSidebar: (callback) => ipcRenderer.on('menu:toggle-right-sidebar', callback),
   onToggleCompletedSection: (callback) => ipcRenderer.on('menu:toggle-completed-section', callback),
+  onToggleWordWrap: (callback) => ipcRenderer.on('menu:toggle-word-wrap', callback),
   onToggleCompleted: (callback) => ipcRenderer.on('menu:toggle-completed', callback),
   onDeleteTask: (callback) => ipcRenderer.on('menu:delete-task', callback),
   onSelectNext: (callback) => ipcRenderer.on('menu:select-next', callback),

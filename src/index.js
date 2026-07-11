@@ -16,6 +16,7 @@ async function init() {
   restoreSidebarLeftState();
   restoreSidebarRightState();
   restoreCompletedSectionState();
+  restoreTaskTitleWrapState();
   renderTaskArea();
   setupConnectionTracking();
   updateOfflineIndicator();
@@ -85,6 +86,7 @@ function setupMenuListeners() {
   window.appMenu?.onToggleLeftSidebar(() => toggleSidebarLeft());
   window.appMenu?.onToggleRightSidebar(() => toggleSidebarRight());
   window.appMenu?.onToggleCompletedSection(() => toggleCompletedSection());
+  window.appMenu?.onToggleWordWrap(() => toggleTaskTitleWrap());
   window.appMenu?.onToggleCompleted(() => {
     const selectedTask = getSelectedTask();
     if (selectedTask) handleToggleCompleted(selectedTask);
