@@ -326,17 +326,19 @@ function growTaskDetailTitle() {
 }
 
 function selectAdjacentTask(direction) {
-  const ordered = getOrderedTasks();
+  // Completed tasks are always in the DOM (just CSS-hidden—see renderTasks), so
+  // when the completed section is collapsed, keyboard navigation must skip them
+  // too; otherwise Cmd+Shift+[/] would silently jump into rows the user can't see.
+  const completedHidden = completedSection.classList.contains('is-hidden');
+  const ordered = getOrderedTasks().filter((t) => !completedHidden || !t.completed);
   if (ordered.length === 0) return;
   const index = ordered.findIndex((t) => t.id === selectedTaskId);
-  if (index === -1) {
-    selectTask(ordered[0].id);
-    return;
-  }
-  const next = ordered[index + direction];
-  if (next) {
-    selectTask(next.id);
-  }
+  const target = index === -1 ? ordered[0] : ordered[index + direction];
+  if (!target) return;
+  selectTask(target.id);
+  // Unlike a click (already visible when made), keyboard navigation can move
+  // selection outside the scroll area's current viewport; bring it into view.
+  taskList.querySelector(`.task[data-id="${CSS.escape(target.id)}"]`)?.scrollIntoView({ block: 'nearest' });
 }
 
 // ---------------------------------------------------------------------------

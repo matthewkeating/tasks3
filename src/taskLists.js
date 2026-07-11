@@ -162,15 +162,20 @@ async function selectTaskList(listId) {
   // Force a synchronous blur/commit of whichever detail field is focused before
   // switching lists (mirrors selectTask() in tasks.js). Without this, the field
   // stays focused through loadTasksForSelectedList()'s await, which replaces
-  // `tasks` with the new list's data—by the time the incidental blur from
-  // addTaskInput.focus() below fires, detailEditingTaskId no longer resolves
-  // in `tasks`, and the pending edit is silently dropped.
+  // `tasks` with the new list's data—by the time the field naturally blurs,
+  // detailEditingTaskId no longer resolves in `tasks`, and the pending edit is
+  // silently dropped.
   taskDetailTitleInput?.blur();
   taskDetailNotesInput?.blur();
   selectedListId = listId;
   renderTaskLists();
   await loadTasksForSelectedList();
-  addTaskInput?.focus();
+  // Land on the top task so the new list's contents are immediately visible in
+  // the detail pane, rather than switching lists to an empty selection.
+  const [topTask] = getOrderedTasks();
+  if (topTask) {
+    selectTask(topTask.id);
+  }
 }
 
 function toggleSidebarLeft() {

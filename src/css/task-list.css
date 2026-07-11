@@ -153,6 +153,10 @@
   padding: 0 10px;
   border-radius: 6px;
   cursor: default;
+  /* Gives scrollIntoView({ block: 'nearest' }) (keyboard nav—see selectAdjacentTask)
+     room to stop a bit early, so the adjacent row peeks into view as a scroll cue
+     instead of the selected row landing flush against the viewport edge. */
+  scroll-margin-block: 23px;
 }
 
 /* Thin centered divider between rows */
