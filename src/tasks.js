@@ -19,9 +19,14 @@ const taskDetail = document.getElementById('taskDetail');
 const taskDetailTitleInput = document.getElementById('taskDetailTitle');
 const taskDetailNotesInput = document.getElementById('taskDetailNotes');
 const deleteConfirmModalOverlay = document.getElementById('deleteConfirmModalOverlay');
+const deleteConfirmModalIcon = document.getElementById('deleteConfirmModalIcon');
 const deleteConfirmModalMessage = document.getElementById('deleteConfirmModalMessage');
 const deleteConfirmCancelBtn = document.getElementById('deleteConfirmCancelBtn');
 const deleteConfirmDeleteBtn = document.getElementById('deleteConfirmDeleteBtn');
+
+if (deleteConfirmModalIcon) {
+  deleteConfirmModalIcon.innerHTML = ICONS.trash;
+}
 
 async function loadTasksForSelectedList() {
   const listId = selectedListId;

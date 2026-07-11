@@ -23,7 +23,7 @@
     --color-accent-active: #2a7edf;
     --color-danger: #d63636;
     --color-danger-hover: #c62b2b;
-    --color-overlay: rgba(0, 0, 0, 0.5);
+    --color-overlay: rgba(0, 0, 0, 0.25);
     --color-shadow: rgba(0, 0, 0, 0.5);
   }
 }
@@ -49,7 +49,7 @@
     --color-accent-active: #0f5bc0;
     --color-danger: #d93025;
     --color-danger-hover: #c5221f;
-    --color-overlay: rgba(0, 0, 0, 0.3);
+    --color-overlay: rgba(0, 0, 0, 0.12);
     --color-shadow: rgba(0, 0, 0, 0.15);
   }
 }
