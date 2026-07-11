@@ -51,10 +51,12 @@ function buildMenu(win) {
           accelerator: 'CmdOrCtrl+Shift+W',
           click: send('menu:toggle-word-wrap'),
         },
-        { type: 'separator' },
-        // The single Full Screen entry; macOS's own auto-injected duplicate is
-        // suppressed via NSFullScreenMenuItemEverywhere in main.js.
-        { role: 'togglefullscreen' },
+        // Deliberately no Full Screen menu item: declaring a togglefullscreen
+        // role here reliably produced a duplicate on this app's macOS/Electron
+        // combination, for a reason that wasn't pinned down (title-matching,
+        // fullscreenable:false, and the NSFullScreenMenuItemEverywhere default
+        // all failed to fix it). Full Screen is still reachable via the native
+        // green traffic-light button—the window itself is still fullscreenable.
       ],
     },
     {
