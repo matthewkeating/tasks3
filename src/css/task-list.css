@@ -54,7 +54,7 @@
   border: 1px solid var(--color-border);
   border-radius: 6px;
   color: var(--color-text-primary);
-  padding: 8px 12px;
+  padding: 9px 12px;
   font: inherit;
   outline: none;
   margin-bottom: 14px;
@@ -142,7 +142,7 @@
   cursor: default;
 }
 
-/* Thin centered divider between rows (95% width, like tasks2) */
+/* Thin centered divider between rows */
 .task::after {
   content: "";
   display: block;
@@ -157,6 +157,12 @@
 
 .task:hover {
   background: var(--color-surface-hover);
+}
+
+.task-selected::after,
+.task:has(+ .task-selected)::after,
+.task:has(+ .task:hover)::after {
+  display: none;
 }
 
 .task-selected {
@@ -174,8 +180,8 @@
 
 .task-title {
   flex: 1;
-  margin: 6px;
-  padding: 6px;
+  margin: 5px;
+  padding: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -188,8 +194,8 @@
 
 .task-title-is-editing {
   flex: 1;
-  margin: 6px;
-  padding: 6px;
+  margin: 5px;
+  padding: 5px;
   background: var(--color-bg-elevated);
   outline: 1px solid var(--color-border-strong);
   border-radius: 4px;

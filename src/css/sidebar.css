@@ -64,7 +64,8 @@
 .task-list-item {
   display: block;
   width: 100%;
-  padding: 8px 16px;
+  /* padding: 8px 16px; */
+  padding: 0 10px;
   margin: 2px;
   border: none;
   border-radius: 6px;
@@ -84,6 +85,12 @@
 
 .task-list-item-title {
   display: block;
+  /*
+  margin: 0px;
+  padding: 0px;
+  */
+  margin: 4px;  /* 6 */
+  padding: 4px; /* 6 */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

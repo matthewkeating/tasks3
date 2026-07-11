@@ -225,6 +225,11 @@ function setupTaskListEventListeners() {
   // This avoids attaching a listener to each item individually when the list re-renders.
   if (sidebarLeftContent) {
     sidebarLeftContent.addEventListener('click', (event) => {
+      // A click inside a title that's mid inline-edit is placing the caret;
+      // clearing the selection here would wipe that caret (a collapsed range)
+      // and leave the contenteditable unable to accept typing. Same guard as
+      // the task row's mousedown handler in tasks.js.
+      if (event.target.classList.contains('task-list-item-title-is-editing')) return;
       const item = event.target.closest('.task-list-item');
       if (item) {
         // Clear any lingering text selection from a previous inline edit.
