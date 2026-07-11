@@ -7,95 +7,37 @@ const googleTasksClient = require('./googleTasksClient');
 // This separation keeps IPC wiring independent from implementation, making it easier to
 // test business logic and add new endpoints without duplicating logic.
 
+// Wraps a task endpoint: delegate to the client, and on any error (typically a
+// network failure) return `fallback` instead of throwing. Swallowing here keeps
+// Electron from console-logging the rejection; the renderer handles the fallback
+// shape via try/catch and the poll retries automatically in 10s.
+function handleTaskCall(channel, fn, fallback) {
+  ipcMain.handle(channel, async (_event, ...args) => {
+    try {
+      return await fn(...args);
+    } catch {
+      return fallback;
+    }
+  });
+}
+
 function registerIpcHandlers() {
+  // Auth handlers surface their own errors to the renderer, so they aren't wrapped.
   ipcMain.handle('auth:getStatus', () => auth.getAuthStatus());
   ipcMain.handle('auth:signIn', () => auth.signIn());
   ipcMain.handle('auth:signOut', () => auth.signOut());
 
-  // Task list endpoints return wrapped responses for consistency and future extensibility.
-  // Network errors are caught here to suppress Electron's console logging—the renderer
-  // handles errors via try/catch and the poll retries automatically.
-  ipcMain.handle('tasks:listTaskLists', async () => {
-    try {
-      const taskLists = await googleTasksClient.listTaskLists();
-      return { taskLists };
-    } catch {
-      // Network error; return empty. Renderer shows stale data or empty state. Poll retries in 10s.
-      return { taskLists: [] };
-    }
-  });
-
-  ipcMain.handle('tasks:insertTaskList', async (_event, title) => {
-    try {
-      const taskList = await googleTasksClient.insertTaskList(title);
-      return { taskList };
-    } catch {
-      return { taskList: null };
-    }
-  });
-
-  ipcMain.handle('tasks:patchTaskList', async (_event, taskListId, title) => {
-    try {
-      const taskList = await googleTasksClient.patchTaskList(taskListId, title);
-      return { taskList };
-    } catch {
-      return { taskList: null };
-    }
-  });
-
-  ipcMain.handle('tasks:deleteTaskList', async (_event, taskListId) => {
-    try {
-      await googleTasksClient.deleteTaskList(taskListId);
-      return { ok: true };
-    } catch {
-      return { ok: false };
-    }
-  });
-
-  ipcMain.handle('tasks:listTasks', async (_event, taskListId) => {
-    try {
-      const tasks = await googleTasksClient.listTasks(taskListId);
-      return { tasks };
-    } catch {
-      return { tasks: [] };
-    }
-  });
-
-  ipcMain.handle('tasks:insertTask', async (_event, taskListId, title, previousTaskId) => {
-    try {
-      const task = await googleTasksClient.insertTask(taskListId, title, previousTaskId);
-      return { task };
-    } catch {
-      return { task: null };
-    }
-  });
-
-  ipcMain.handle('tasks:patchTask', async (_event, taskListId, taskId, updates) => {
-    try {
-      const task = await googleTasksClient.patchTask(taskListId, taskId, updates);
-      return { task };
-    } catch {
-      return { task: null };
-    }
-  });
-
-  ipcMain.handle('tasks:deleteTask', async (_event, taskListId, taskId) => {
-    try {
-      await googleTasksClient.deleteTask(taskListId, taskId);
-      return { ok: true };
-    } catch {
-      return { ok: false };
-    }
-  });
-
-  ipcMain.handle('tasks:moveTask', async (_event, taskListId, taskId, previousTaskId) => {
-    try {
-      const task = await googleTasksClient.moveTask(taskListId, taskId, previousTaskId);
-      return { task };
-    } catch {
-      return { task: null };
-    }
-  });
+  // Task endpoints return wrapped responses for consistency and future extensibility.
+  const client = googleTasksClient;
+  handleTaskCall('tasks:listTaskLists', async () => ({ taskLists: await client.listTaskLists() }), { taskLists: [] });
+  handleTaskCall('tasks:insertTaskList', async (title) => ({ taskList: await client.insertTaskList(title) }), { taskList: null });
+  handleTaskCall('tasks:patchTaskList', async (id, title) => ({ taskList: await client.patchTaskList(id, title) }), { taskList: null });
+  handleTaskCall('tasks:deleteTaskList', async (id) => { await client.deleteTaskList(id); return { ok: true }; }, { ok: false });
+  handleTaskCall('tasks:listTasks', async (id) => ({ tasks: await client.listTasks(id) }), { tasks: [] });
+  handleTaskCall('tasks:insertTask', async (id, title, prev) => ({ task: await client.insertTask(id, title, prev) }), { task: null });
+  handleTaskCall('tasks:patchTask', async (id, taskId, updates) => ({ task: await client.patchTask(id, taskId, updates) }), { task: null });
+  handleTaskCall('tasks:deleteTask', async (id, taskId) => { await client.deleteTask(id, taskId); return { ok: true }; }, { ok: false });
+  handleTaskCall('tasks:moveTask', async (id, taskId, prev) => ({ task: await client.moveTask(id, taskId, prev) }), { task: null });
 }
 
 module.exports = { registerIpcHandlers };

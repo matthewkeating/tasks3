@@ -1,20 +1,10 @@
-// Tasks (main list + right-hand detail pane): state and rendering for the
-// selected list's tasks, selection, mutation, and inline editing.
+// Tasks (main list area): state and rendering for the selected list's tasks,
+// selection, mutation, and inline title editing. The right-hand detail pane
+// (title/notes fields for the selected task) lives in taskDetail.js and reads
+// this module's `tasks`/`selectedTaskId` state.
 let tasks = [];
 let selectedTaskId = null;
 let draggedTaskId = null;
-// The task the detail pane's title/notes fields belong to, captured on focus.
-// Clicking another task row updates selectedTaskId (via its mousedown handler)
-// before the blur fires on whichever detail field was focused, so blur handlers
-// can't trust selectedTaskId to still name the task being edited—they need the
-// id captured at focus time instead.
-let detailEditingTaskId = null;
-// Notes autosave: committed on blur (see handleTaskDetailNotesBlur) and also
-// after a pause in typing, so a long editing session without blurring still
-// persists periodically. Timer is cleared on blur to avoid a stale debounced
-// save firing (and re-diffing against the wrong task) after the field commits.
-let notesDebounceTimer = null;
-const NOTES_DEBOUNCE_MS = 700;
 
 const taskList = document.getElementById('taskList');
 const activeContainer = document.getElementById('activeContainer');
@@ -22,12 +12,6 @@ const completedContainer = document.getElementById('completedContainer');
 const completedSection = document.getElementById('completedSection');
 const addTaskInput = document.getElementById('addTaskInput');
 const emptyState = document.querySelector('.empty-state');
-const sidebarRight = document.getElementById('sidebarRight');
-const toggleSidebarRightButton = document.getElementById('toggleSidebarRightBtn');
-const taskDetailEmpty = document.getElementById('taskDetailEmpty');
-const taskDetail = document.getElementById('taskDetail');
-const taskDetailTitleInput = document.getElementById('taskDetailTitle');
-const taskDetailNotesInput = document.getElementById('taskDetailNotes');
 const deleteConfirmModalOverlay = document.getElementById('deleteConfirmModalOverlay');
 const deleteConfirmModalIcon = document.getElementById('deleteConfirmModalIcon');
 const deleteConfirmModalMessage = document.getElementById('deleteConfirmModalMessage');
@@ -61,32 +45,17 @@ async function loadTasksForSelectedList() {
     // Network or API error; leave previously-rendered tasks in place.
     return;
   }
-  updateUI();
+  renderTaskArea();
 }
 
-function toggleSidebarRight() {
-  const isHidden = sidebarRight.classList.toggle('is-hidden');
-  localStorage.setItem('sidebarRightHidden', isHidden);
-}
-
+// Shared toggle/persist/restore mechanics live in persistedToggle.js; restore()
+// runs pre-paint from init() (see the note there).
+const completedSectionToggle = makePersistedToggle(completedSection, 'completedSectionHidden');
 function toggleCompletedSection() {
-  const isHidden = completedSection.classList.toggle('is-hidden');
-  localStorage.setItem('completedSectionHidden', isHidden);
+  completedSectionToggle.toggle();
 }
-
-// See restoreSidebarLeftState in taskLists.js for why these run pre-paint from init().
-function restoreSidebarRightState() {
-  const stored = localStorage.getItem('sidebarRightHidden');
-  if (stored !== null) {
-    sidebarRight.classList.toggle('is-hidden', stored === 'true');
-  }
-}
-
 function restoreCompletedSectionState() {
-  const stored = localStorage.getItem('completedSectionHidden');
-  if (stored !== null) {
-    completedSection.classList.toggle('is-hidden', stored === 'true');
-  }
+  completedSectionToggle.restore();
 }
 
 // ---------------------------------------------------------------------------
@@ -113,7 +82,7 @@ function getOrderedTasks() {
 async function handleToggleCompleted(task) {
   const listId = selectedListId;
   task.completed = !task.completed;
-  updateUI();
+  renderTaskArea();
   try {
     await window.googleTasks.patchTask(listId, task.id, { completed: task.completed });
   } catch {
@@ -129,7 +98,7 @@ async function handleDeleteTask(task) {
   const nextSelection = ordered[index + 1] ?? ordered[index - 1] ?? null;
   tasks = tasks.filter((t) => t.id !== task.id);
   selectedTaskId = nextSelection ? nextSelection.id : null;
-  updateUI();
+  renderTaskArea();
   try {
     await window.googleTasks.deleteTask(listId, task.id);
   } catch {
@@ -140,7 +109,7 @@ async function handleDeleteTask(task) {
 async function handleRenameTask(task, newTitle) {
   const listId = selectedListId;
   task.title = newTitle;
-  updateUI();
+  renderTaskArea();
   try {
     await window.googleTasks.patchTask(listId, task.id, { title: newTitle });
   } catch {
@@ -165,7 +134,7 @@ async function handleMoveTask(task, previousTaskId, wasCompleted) {
 async function handleUpdateNotes(task, newNotes) {
   const listId = selectedListId;
   task.notes = newNotes.length > 0 ? newNotes : null;
-  updateUI();
+  renderTaskArea();
   try {
     await window.googleTasks.patchTask(listId, task.id, { notes: task.notes });
   } catch {
@@ -174,51 +143,17 @@ async function handleUpdateNotes(task, newNotes) {
 }
 
 // Mirrors live typing in the detail title textarea into the corresponding row
-// in the list (reciprocal of syncSelectedTaskDetailTitle in the inline-editing
-// section below). Skipped if the row is itself mid inline-edit (its title div
-// won't match `.task-title` while editing—see beginTitleEdit)—that direction
-// is handled by the row's own live-input listener instead.
+// in the list (reciprocal of syncSelectedTaskDetailTitle in taskDetail.js).
+// Skipped if the row is itself mid inline-edit (its title div won't match
+// `.task-title` while editing—see beginTitleEdit)—that direction is handled by
+// the row's own live-input listener instead. Called from the detail title
+// input's listener, which lives in taskDetail.js.
 function syncSelectedTaskTitleRow() {
   if (!selectedTaskId) return;
   const rowTitle = taskList.querySelector(`.task[data-id="${CSS.escape(selectedTaskId)}"] .task-title`);
   if (rowTitle) {
     applyTaskTitleDisplay(rowTitle, taskDetailTitleInput.value);
   }
-}
-
-function handleTaskDetailTitleBlur() {
-  const task = tasks.find((t) => t.id === detailEditingTaskId);
-  if (!task) return;
-  const newTitle = taskDetailTitleInput.value.trim();
-  if (newTitle !== task.title) {
-    handleRenameTask(task, newTitle);
-  }
-}
-
-function commitNotesIfChanged() {
-  const task = tasks.find((t) => t.id === detailEditingTaskId);
-  if (!task) return;
-  const newNotes = taskDetailNotesInput.value;
-  if (newNotes !== (task.notes ?? '')) {
-    handleUpdateNotes(task, newNotes);
-  }
-}
-
-function handleTaskDetailNotesInput() {
-  clearTimeout(notesDebounceTimer);
-  notesDebounceTimer = setTimeout(() => {
-    notesDebounceTimer = null;
-    commitNotesIfChanged();
-  }, NOTES_DEBOUNCE_MS);
-}
-
-function handleTaskDetailNotesBlur() {
-  // Cancel any pending debounced save—commitNotesIfChanged below covers it,
-  // and a timer left running would fire after blur, re-reading
-  // detailEditingTaskId once it may already point at a different task.
-  clearTimeout(notesDebounceTimer);
-  notesDebounceTimer = null;
-  commitNotesIfChanged();
 }
 
 async function handleAddTask(title, position) {
@@ -238,7 +173,7 @@ async function handleAddTask(title, position) {
     }
     addTaskInput.value = '';
     selectedTaskId = task.id;
-    updateUI();
+    renderTaskArea();
   } catch {
     // Leave the input text in place so the user can retry.
   }
@@ -260,24 +195,18 @@ function getSelectedTask() {
   return tasks.find((t) => t.id === selectedTaskId) ?? null;
 }
 
+// The row's quick-actions strip is shown purely via the `.task-selected` class
+// in CSS (see task-list.css), so this only needs to toggle that one class.
 function applySelectionClasses(taskId) {
   const row = taskList.querySelector(`.task[data-id="${CSS.escape(taskId)}"]`);
   row?.classList.add('task-selected');
-  document.getElementById('qa_' + taskId)?.classList.remove('display-none');
 }
 
 function selectTask(taskId) {
   if (selectedTaskId === taskId) return;
-  // Force a synchronous blur/commit of whichever detail field is focused before
-  // switching selectedTaskId. Without this, clicking another task row changes
-  // selectedTaskId (and calls renderTaskDetail) before the field's blur fires
-  // naturally—renderTaskDetail then sees the field still focused and skips
-  // repainting it (to avoid clobbering in-progress typing), leaving the old
-  // task's note/title displayed under the newly selected task until the next
-  // poll. Blurring here also runs handleTaskDetail*Blur while detailEditingTaskId
-  // still names the outgoing task, so any unsaved edit is committed correctly.
-  taskDetailTitleInput?.blur();
-  taskDetailNotesInput?.blur();
+  // Commit and flush any focused detail field before selectedTaskId changes
+  // underneath it (see commitPendingDetailEdits in taskDetail.js for why).
+  commitPendingDetailEdits();
   // Clicking a row blurs addTaskInput naturally (mousedown shifts focus away),
   // but keyboard-driven selection (Cmd+Shift+[/]) never touches focus on its
   // own, so do it explicitly here to cover both paths.
@@ -291,38 +220,8 @@ function selectTask(taskId) {
 function deselectTask() {
   if (selectedTaskId === null) return;
   taskList.querySelector('.task-selected')?.classList.remove('task-selected');
-  document.getElementById('qa_' + selectedTaskId)?.classList.add('display-none');
   selectedTaskId = null;
   renderTaskDetail();
-}
-
-// Renders the selected task's title/notes into the right sidebar, or an empty
-// message if nothing is selected. Skips fields the user is actively editing so
-// an unrelated re-render (e.g. toggling another task) doesn't clobber typing.
-function renderTaskDetail() {
-  if (!taskDetail || !taskDetailEmpty) return;
-  const task = tasks.find((t) => t.id === selectedTaskId);
-  if (!task) {
-    taskDetail.classList.add('display-none');
-    taskDetailEmpty.classList.remove('display-none');
-    return;
-  }
-  taskDetailEmpty.classList.add('display-none');
-  taskDetail.classList.remove('display-none');
-  if (document.activeElement !== taskDetailTitleInput) {
-    taskDetailTitleInput.value = task.title;
-    growTaskDetailTitle();
-  }
-  if (document.activeElement !== taskDetailNotesInput) {
-    taskDetailNotesInput.value = task.notes ?? '';
-  }
-}
-
-// The title textarea has no fixed height (rows="1"); grow it to fit wrapped
-// content since a plain <textarea> doesn't auto-size on its own.
-function growTaskDetailTitle() {
-  taskDetailTitleInput.style.height = 'auto';
-  taskDetailTitleInput.style.height = `${taskDetailTitleInput.scrollHeight}px`;
 }
 
 function selectAdjacentTask(direction) {
@@ -345,8 +244,11 @@ function selectAdjacentTask(direction) {
 // Rendering
 // ---------------------------------------------------------------------------
 
-// Update UI based on tasks state: show empty state if no tasks, otherwise render the list.
-function updateUI() {
+// Re-render the main task area from `tasks` state: show the empty state if
+// there are no tasks, otherwise render the list, then refresh the detail pane
+// and the sidebar's active-task count. (Named for its scope—it owns the task
+// area only; the sidebar list is rendered by renderTaskLists in taskLists.js.)
+function renderTaskArea() {
   if (tasks.length === 0) {
     taskList.classList.remove('has-tasks');
     emptyState.style.display = 'flex';
@@ -367,16 +269,16 @@ function renderTasks() {
   completedContainer.innerHTML = '';
 
   for (const task of tasks) {
-    const row = getListItem(task);
+    const row = createTaskRow(task);
     (task.completed ? completedContainer : activeContainer).appendChild(row);
   }
 
   // Empty sections still need a drop target for cross-section drags.
   if (!tasks.some((t) => !t.completed)) {
-    activeContainer.appendChild(getEmptyDropContainer('Drop active tasks here.'));
+    activeContainer.appendChild(createEmptyDropContainer('Drop active tasks here.'));
   }
   if (!tasks.some((t) => t.completed)) {
-    completedContainer.appendChild(getEmptyDropContainer('Drop completed tasks here.'));
+    completedContainer.appendChild(createEmptyDropContainer('Drop completed tasks here.'));
   }
 
   // Re-apply selection after the rebuild; drop it if the task no longer exists.
@@ -390,23 +292,23 @@ function renderTasks() {
 }
 
 // Shared idle-state rendering for a task title: empty titles show the "No Title"
-// placeholder (italicized via .noTitle) instead of blank text. Used for both the
+// placeholder (italicized via .task-title-empty) instead of blank text. Used for both the
 // initial row render and the live sync from the detail textarea (see
 // syncSelectedTaskTitleRow), so the two stay visually consistent.
 function applyTaskTitleDisplay(el, title) {
   if (title.length === 0) {
     el.textContent = 'No Title';
-    el.classList.add('noTitle');
+    el.classList.add('task-title-empty');
   } else {
     el.textContent = title;
-    el.classList.remove('noTitle');
+    el.classList.remove('task-title-empty');
   }
 }
 
 // Builds one task row: [complete circle] [title] [quick actions] [note indicator].
 // User data enters the DOM via textContent only (XSS-safe); icon markup is
 // static trusted strings from icons.js.
-function getListItem(task) {
+function createTaskRow(task) {
   const taskDiv = document.createElement('div');
   taskDiv.classList.add('task');
   taskDiv.draggable = true;
@@ -428,7 +330,7 @@ function getListItem(task) {
     }
   });
 
-  const circle = getCompleteAction(task);
+  const circle = createCompleteAction(task);
 
   const title = document.createElement('div');
   title.dataset.type = 'selectable';
@@ -438,7 +340,7 @@ function getListItem(task) {
     title.classList.add('task-title-completed');
   }
 
-  const quickActions = getQuickActions(task);
+  const quickActions = createQuickActions(task);
 
   // Note indicator: the span is rendered even without notes to keep rows aligned.
   const note = document.createElement('span');
@@ -451,7 +353,7 @@ function getListItem(task) {
   return taskDiv;
 }
 
-function getCompleteAction(task) {
+function createCompleteAction(task) {
   const circle = document.createElement('span');
   circle.classList.add('icon-circle', 'icon-circle-hover');
   circle.innerHTML = task.completed ? ICONS.circleChecked : ICONS.circleEmpty;
@@ -467,11 +369,11 @@ function getCompleteAction(task) {
   return circle;
 }
 
-// Per-row action strip, hidden until the row is selected (see applySelectionClasses).
-function getQuickActions(task) {
+// Per-row action strip. Visibility is driven entirely by the row's
+// `.task-selected` class in CSS (see task-list.css)—no per-row toggling needed.
+function createQuickActions(task) {
   const quickActions = document.createElement('div');
-  quickActions.id = 'qa_' + task.id;
-  quickActions.classList.add('quick-actions', 'display-none');
+  quickActions.classList.add('quick-actions');
 
   const trash = document.createElement('span');
   trash.classList.add('icon-trash');
@@ -486,7 +388,7 @@ function getQuickActions(task) {
   return quickActions;
 }
 
-function getEmptyDropContainer(message) {
+function createEmptyDropContainer(message) {
   const placeholder = document.createElement('div');
   placeholder.classList.add('task-empty');
   const icon = document.createElement('span');
@@ -502,16 +404,9 @@ function getEmptyDropContainer(message) {
 // Inline title editing (double-click a title)
 // ---------------------------------------------------------------------------
 
-// Mirrors live typing in a row's contenteditable title into the detail pane's
-// title textarea (reciprocal of syncSelectedTaskTitleRow below), so the two
-// stay in sync while editing. Only fires for the selected task, since that's
-// the only one the detail pane is ever showing.
-function syncSelectedTaskDetailTitle(taskId, rawText) {
-  if (selectedTaskId !== taskId || document.activeElement === taskDetailTitleInput) return;
-  taskDetailTitleInput.value = rawText;
-  growTaskDetailTitle();
-}
-
+// beginTitleEdit mirrors each keystroke into the detail pane via
+// syncSelectedTaskDetailTitle (defined in taskDetail.js), the reciprocal of
+// syncSelectedTaskTitleRow above.
 function beginTitleEdit(titleDiv, task) {
   const handleLiveInput = () => syncSelectedTaskDetailTitle(task.id, titleDiv.textContent);
 
@@ -522,8 +417,8 @@ function beginTitleEdit(titleDiv, task) {
       el.classList.add('task-title-is-editing');
       // Disable row dragging while editing, otherwise text selection starts a drag.
       el.parentElement.setAttribute('draggable', 'false');
-      if (el.classList.contains('noTitle')) {
-        el.classList.remove('noTitle');
+      if (el.classList.contains('task-title-empty')) {
+        el.classList.remove('task-title-empty');
         el.textContent = '';
       }
       el.addEventListener('input', handleLiveInput);
@@ -540,49 +435,10 @@ function beginTitleEdit(titleDiv, task) {
   });
 }
 
+// Detail-pane listeners (right sidebar title/notes) are wired separately in
+// setupTaskDetailEventListeners (taskDetail.js); this covers only the main
+// task area's own inputs.
 function setupTaskEventListeners() {
-  // The title may have been sized against the sidebar's collapsed (0px) width if a
-  // task was selected while it was hidden; recompute once the open transition settles.
-  if (sidebarRight) {
-    sidebarRight.addEventListener('transitionend', (event) => {
-      if (event.propertyName === 'width' && !sidebarRight.classList.contains('is-hidden')) {
-        growTaskDetailTitle();
-      }
-    });
-  }
-
-  if (toggleSidebarRightButton && sidebarRight) {
-    toggleSidebarRightButton.addEventListener('click', toggleSidebarRight);
-  }
-
-  // Enter commits the title (mirrors the add-task input); notes have no Enter
-  // handling, since Enter should insert a newline in a multi-line notes field—
-  // they commit on blur and, via handleTaskDetailNotesInput, on a typing pause.
-  if (taskDetailTitleInput) {
-    taskDetailTitleInput.addEventListener('focus', () => {
-      detailEditingTaskId = selectedTaskId;
-    });
-    taskDetailTitleInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        taskDetailTitleInput.blur();
-      }
-    });
-    taskDetailTitleInput.addEventListener('input', () => {
-      growTaskDetailTitle();
-      syncSelectedTaskTitleRow();
-    });
-    taskDetailTitleInput.addEventListener('blur', handleTaskDetailTitleBlur);
-  }
-
-  if (taskDetailNotesInput) {
-    taskDetailNotesInput.addEventListener('focus', () => {
-      detailEditingTaskId = selectedTaskId;
-    });
-    taskDetailNotesInput.addEventListener('input', handleTaskDetailNotesInput);
-    taskDetailNotesInput.addEventListener('blur', handleTaskDetailNotesBlur);
-  }
-
   if (addTaskInput) {
     addTaskInput.addEventListener('keydown', handleAddTaskInputKeydown);
   }

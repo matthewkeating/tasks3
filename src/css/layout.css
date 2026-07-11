@@ -59,7 +59,7 @@ header {
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: var(--color-text-subtle);
+  color: var(--color-text-faint);
   cursor: pointer;
   display: flex;
   align-items: center;

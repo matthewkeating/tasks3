@@ -12,11 +12,11 @@ let isOnline = navigator.onLine;
 // Initialize the app: update UI for initial state, set up event listeners, then fetch auth status.
 async function init() {
   initializeIcons();
-  // Must run before updateUI()/first paint—see restoreSidebarLeftState in taskLists.js.
+  // Must run before renderTaskArea()/first paint—see restoreSidebarLeftState in taskLists.js.
   restoreSidebarLeftState();
   restoreSidebarRightState();
   restoreCompletedSectionState();
-  updateUI();
+  renderTaskArea();
   setupConnectionTracking();
   updateOfflineIndicator();
   setupEventListeners();
@@ -67,6 +67,7 @@ function setupEventListeners() {
   setupAuthEventListeners();
   setupTaskListEventListeners();
   setupTaskEventListeners();
+  setupTaskDetailEventListeners();
   setupDragAndDrop();
   window.addEventListener('keydown', handleGlobalKeydown);
   setupMenuListeners();
@@ -132,14 +133,13 @@ async function pollForUpdates() {
     tasks = [];
     renderTaskListTitle();
     renderSidebarMessage('No task lists found.');
-    updateUI();
+    renderTaskArea();
     return;
   }
 
   if (!taskLists.some((list) => list.id === selectedListId)) {
-    // Alphabetically-first, matching sidebar order (see taskLists.js's loadTaskLists).
-    const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
-    selectedListId = sortedLists[0].id;
+    // Alphabetically-first, matching sidebar order (see getSortedTaskLists in taskLists.js).
+    selectedListId = getSortedTaskLists()[0].id;
   }
   renderTaskLists();
   await loadTasksForSelectedList();
@@ -210,7 +210,7 @@ function handleGlobalKeydown(event) {
   // Cmd/Ctrl+1 through Cmd/Ctrl+9 to select task list by position (sorted alphabetically).
   if ((event.metaKey || event.ctrlKey) && event.key >= '1' && event.key <= '9') {
     const listIndex = parseInt(event.key) - 1;
-    const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+    const sortedLists = getSortedTaskLists();
     if (listIndex < sortedLists.length) {
       selectTaskList(sortedLists[listIndex].id);
       event.preventDefault();

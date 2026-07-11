@@ -41,6 +41,13 @@ function showDeleteListConfirmModal(list) {
   deleteListConfirmModal.show(list, `Delete "${list.title}"? This can't be undone.`);
 }
 
+// The single definition of sidebar display order: task lists sorted
+// alphabetically by title. Every render and every position-based shortcut
+// (Cmd/Ctrl+1–9) reads order from here so they can't drift apart.
+function getSortedTaskLists() {
+  return [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+}
+
 function renderSidebarMessage(html) {
   if (sidebarLeftContent) {
     sidebarLeftContent.innerHTML = `<div class="sidebar-message">${html}</div>`;
@@ -66,14 +73,14 @@ async function loadTaskLists() {
 
   renderTaskLists();
   // Auto-select the alphabetically-first list (matching sidebar order) and load its tasks.
-  const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedLists = getSortedTaskLists();
   await selectTaskList(sortedLists[0].id);
 }
 
 // Builds one sidebar list button: [title span]. The title is a dedicated child
 // element (not the button's own text) so it can become the contenteditable
 // target for inline rename without putting contenteditable directly on a <button>.
-function getTaskListItem(list) {
+function createTaskListItem(list) {
   const button = document.createElement('button');
   button.classList.add('task-list-item');
   button.dataset.listId = list.id;
@@ -96,7 +103,7 @@ function getTaskListItem(list) {
 // destroys an in-progress inline rename elsewhere in the sidebar.
 function renderTaskLists() {
   if (!sidebarLeftContent) return;
-  const sortedLists = [...taskLists].sort((a, b) => a.title.localeCompare(b.title));
+  const sortedLists = getSortedTaskLists();
   const currentIds = new Set(sortedLists.map((list) => list.id));
 
   for (const child of [...sidebarLeftContent.children]) {
@@ -108,7 +115,7 @@ function renderTaskLists() {
   sortedLists.forEach((list, index) => {
     let button = sidebarLeftContent.querySelector(`[data-list-id="${CSS.escape(list.id)}"]`);
     if (!button) {
-      button = getTaskListItem(list);
+      button = createTaskListItem(list);
     }
     const titleEl = button.querySelector('.task-list-item-title');
     const isEditing = titleEl.classList.contains('task-list-item-title-is-editing');
@@ -146,7 +153,7 @@ function renderTaskListTitle() {
 }
 
 // tasks.js mutates its own `tasks` array (add/complete/delete) without touching
-// taskLists state, so this lets updateUI() keep the sidebar's count in sync
+// taskLists state, so this lets renderTaskArea() keep the sidebar's count in sync
 // immediately rather than leaving it stale until the next poll.
 function syncSelectedListActiveCount(activeCount) {
   const list = taskLists.find((l) => l.id === selectedListId);
@@ -159,14 +166,11 @@ async function selectTaskList(listId) {
   // Re-clicking the already-selected list is a no-op: avoids a pointless
   // re-render and re-fetch on every click of the sidebar.
   if (listId === selectedListId) return;
-  // Force a synchronous blur/commit of whichever detail field is focused before
-  // switching lists (mirrors selectTask() in tasks.js). Without this, the field
-  // stays focused through loadTasksForSelectedList()'s await, which replaces
-  // `tasks` with the new list's data—by the time the field naturally blurs,
-  // detailEditingTaskId no longer resolves in `tasks`, and the pending edit is
-  // silently dropped.
-  taskDetailTitleInput?.blur();
-  taskDetailNotesInput?.blur();
+  // Commit and flush any focused detail field before `tasks` is replaced by the
+  // new list's data below (mirrors selectTask() in tasks.js). See
+  // commitPendingDetailEdits in taskDetail.js for why this can't wait for the
+  // field's natural blur.
+  commitPendingDetailEdits();
   selectedListId = listId;
   renderTaskLists();
   await loadTasksForSelectedList();
@@ -178,20 +182,15 @@ async function selectTaskList(listId) {
   }
 }
 
+// Shared toggle/persist/restore mechanics live in persistedToggle.js; see the
+// restore()-runs-pre-paint note there for why restoreSidebarLeftState is called
+// from init() before first paint.
+const sidebarLeftToggle = makePersistedToggle(sidebarLeft, 'sidebarLeftHidden');
 function toggleSidebarLeft() {
-  const isHidden = sidebarLeft.classList.toggle('is-hidden');
-  localStorage.setItem('sidebarLeftHidden', isHidden);
+  sidebarLeftToggle.toggle();
 }
-
-// Applies the persisted collapse state. Called synchronously from init(), before
-// the DOM's first paint, so restoring a "collapsed" sidebar doesn't visibly play
-// the 0.2s collapse transition on launch—only user-triggered toggles should animate.
-// Absent a stored value (first launch), leaves whatever index.html's markup defaults to.
 function restoreSidebarLeftState() {
-  const stored = localStorage.getItem('sidebarLeftHidden');
-  if (stored !== null) {
-    sidebarLeft.classList.toggle('is-hidden', stored === 'true');
-  }
+  sidebarLeftToggle.restore();
 }
 
 function addList() {
@@ -264,7 +263,7 @@ async function handleDeleteTaskList(list) {
   if (taskLists.length === 0) {
     renderTaskListTitle();
     renderSidebarMessage('No task lists found.');
-    updateUI();
+    renderTaskArea();
   } else {
     renderTaskLists();
     if (wasSelected) {
@@ -303,6 +302,11 @@ async function handleCreateList() {
 // keystroke is mirrored live into `mirrorEl` (the other element showing this
 // same list's title); on cancel/empty-commit onCommit never fires, so the
 // revert to the true title is mirrored explicitly too.
+//
+// This row<->header mirroring is a parallel of the row<->detail task-title
+// mirroring in tasks.js/taskDetail.js (syncSelectedTaskTitleRow /
+// syncSelectedTaskDetailTitle). The two are kept separate on purpose: they
+// mirror through different field types (contenteditable vs <textarea>.value).
 function beginSyncedListTitleEdit(el, editingClass, mirrorEl, list) {
   const handleLiveInput = () => {
     if (mirrorEl) mirrorEl.textContent = el.textContent;

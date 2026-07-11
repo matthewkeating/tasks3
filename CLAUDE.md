@@ -29,14 +29,16 @@ Main process files are split one-per-concern (IPC wiring, auth, API client, toke
 
 **Renderer Process:**
 
-Loaded as plain `<script>` tags (no bundler/module system—see `src/index.html`), so every file shares one global scope, same as `icons.js`'s global `ICONS`. Load order in `index.html` matters only in that a file must appear before another file whose top-level code runs immediately at parse time; nothing here does that, since all cross-file calls happen from within functions invoked later (after `DOMContentLoaded`). Split one-per-view/concern, same rationale as the main-process split above:
+Loaded as plain `<script>` tags (no bundler/module system—see `src/index.html`), so every file shares one global scope, same as `icons.js`'s global `ICONS`. Most cross-file calls happen from within functions invoked later (after `DOMContentLoaded`), so load order is mostly irrelevant—**except** for the shared-mechanics helpers a few files invoke at top level (parse time): `tasks.js`/`taskLists.js` build their confirm modals via `createConfirmModal` (so `confirmModal.js` must load first), and `taskLists.js`/`tasks.js`/`taskDetail.js` build their persisted toggles via `makePersistedToggle` (so `persistedToggle.js` must load first). Keep those helper scripts ahead of their consumers in `index.html`. Split one-per-view/concern, same rationale as the main-process split above:
 - `src/index.js`: App shell only—`init()`, wiring up each module's `setup*EventListeners()`, background polling (`pollForUpdates`), and global keyboard shortcuts (`handleGlobalKeydown`). Owns nothing that's specific to task lists or tasks individually, since polling and keydown handling touch both.
-- `src/taskLists.js`: Left-sidebar view—state (`taskLists`, `selectedListId`, `isNewListModalOpen`), list CRUD, rename, and rendering (`renderTaskLists`)
-- `src/tasks.js`: Main task area + right-hand detail pane—state (`tasks`, `selectedTaskId`, `draggedTaskId`), task CRUD, selection, and rendering (`renderTasks`, `renderTaskDetail`)
+- `src/taskLists.js`: Left-sidebar view—state (`taskLists`, `selectedListId`, `isNewListModalOpen`), list CRUD, rename, and rendering (`renderTaskLists`). `getSortedTaskLists()` here is the single definition of sidebar display order (alphabetical), read by every render and the Cmd/Ctrl+1–9 shortcuts.
+- `src/tasks.js`: Main task-area view—state (`tasks`, `selectedTaskId`, `draggedTaskId`), task CRUD, selection, list rendering (`renderTasks`), and the whole-area refresh `renderTaskArea()`. DOM-node factories are named `create*` (e.g. `createTaskRow`).
+- `src/taskDetail.js`: Right-hand detail pane—renders the selected task's title/notes into editable fields (`renderTaskDetail`), the notes debounce/blur autosave, the row↔detail title mirror (`syncSelectedTaskDetailTitle`), and the right-sidebar collapse toggle. Reads/mutates `tasks`/`selectedTaskId` (owned by `tasks.js`). Exposes `commitPendingDetailEdits()`, which `selectTask` (`tasks.js`) and `selectTaskList` (`taskLists.js`) call to flush a focused field before the selection changes underneath it.
 - `src/dragDrop.js`: Native HTML5 drag-and-drop for reordering tasks; reads/writes `tasks` state from `tasks.js`
 - `src/auth.js`: Sign-in modal and `initGoogleTasks()`/`handleSignIn()`
 - `src/inlineEdit.js`: Shared contenteditable rename mechanics (`beginInlineEdit`), used by both `beginTitleEdit` (`tasks.js`) and `beginListTitleEdit` (`taskLists.js`)
 - `src/confirmModal.js`: Shared destructive-confirmation modal mechanics (`createConfirmModal`), used by the delete-task modal (`tasks.js`) and delete-list modal (`taskLists.js`); also exposes `isAnyConfirmModalOpen()`/`handleConfirmModalKeydown()` so `index.js` can gate polling and route Escape/Enter without knowing about each modal individually
+- `src/persistedToggle.js`: Shared show/hide-with-persistence mechanics (`makePersistedToggle`), used by the two sidebars and the completed section (`taskLists.js`, `taskDetail.js`, `tasks.js`)
 - `src/index.html`: Static structure for header, sidebar, main task area, and empty state
 - `src/css/`: Split one-per-area (`layout`, `sidebar`, `task-list`, `task-detail`, `modal`, `theme`), each theme-aware via CSS custom properties defined in `theme.css`
 
@@ -77,7 +79,7 @@ Omit comments for straightforward code (good naming speaks for itself).
 **Modularity:**
 - Keep renderer functions small and single-purpose; compose them via explicit calls
 - Separate IPC handlers from business logic (e.g., auth logic lives in `main/auth.js`, IPC wiring in `main/ipc.js`)
-- Use the naming convention: `render*` for functions that mutate DOM, `load*` for async data fetches, `handle*` for event listeners
+- Use the naming convention: `render*` for functions that mutate existing DOM, `create*` for functions that build and return a new DOM node (e.g. `createTaskRow`), `load*` for async data fetches, `handle*` for event listeners. Reserve `get*` for functions that read/return state (e.g. `getSelectedTask`), not DOM factories.
 
 **No premature abstractions.** Three similar lines is fine. Abstract only when you see a clear pattern.
 
@@ -85,7 +87,7 @@ Omit comments for straightforward code (good naming speaks for itself).
 
 ### Renderer State Management
 
-All state lives in module-level variables (`tasks`, `taskLists`, `selectedListId`). On state change, call `updateUI()` or a specific render function:
+All state lives in module-level variables (`tasks`, `taskLists`, `selectedListId`). On state change, call `renderTaskArea()` (main task area, in `tasks.js`) or a specific render function:
 ```javascript
 async function selectTaskList(listId) {
   selectedListId = listId;

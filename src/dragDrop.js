@@ -23,7 +23,7 @@ function setupDragAndDrop() {
     container.addEventListener('dragend', () => {
       draggedTaskId = null;
       completedContainer.classList.remove('dragover-completed');
-      updateUI();
+      renderTaskArea();
     });
   }
 
@@ -81,7 +81,7 @@ function handleDropOnActive(event) {
   const byId = new Map(tasks.map((t) => [t.id, t]));
   const completed = tasks.filter((t) => t.completed);
   tasks = [...orderedIds.map((id) => byId.get(id)).filter(Boolean), ...completed];
-  updateUI();
+  renderTaskArea();
   handleMoveTask(task, previousTaskId, wasCompleted);
 }
 
