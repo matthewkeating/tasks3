@@ -17,6 +17,11 @@ function buildMenu(win) {
           accelerator: 'CmdOrCtrl+N',
           click: send('menu:new-task'),
         },
+        {
+          label: 'New List',
+          accelerator: 'CmdOrCtrl+Shift+N',
+          click: send('menu:new-list'),
+        },
         { type: 'separator' },
         process.platform === 'darwin' ? { role: 'close' } : { role: 'quit' },
       ],

@@ -217,6 +217,17 @@ function hideNewListModal() {
   }
 }
 
+// Tab order: input -> Create -> Cancel -> input (circular), putting the primary
+// action (Create) first since it mirrors Enter's submit behavior. Shift+Tab
+// walks the same cycle backward. Called from handleGlobalKeydown (index.js).
+function cycleNewListModalFocus(event) {
+  const order = [newListNameInput, newListCreateBtn, newListCancelBtn];
+  const currentIndex = order.indexOf(document.activeElement);
+  const step = event.shiftKey ? -1 : 1;
+  const nextIndex = (currentIndex + step + order.length) % order.length;
+  order[nextIndex]?.focus();
+}
+
 async function handleRenameTaskList(list, newTitle) {
   const previousTitle = list.title;
   list.title = newTitle;

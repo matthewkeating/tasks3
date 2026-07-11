@@ -81,6 +81,7 @@ function setupEventListeners() {
 // per action instead of duplicating logic across both entry points.
 function setupMenuListeners() {
   window.appMenu?.onNewTask(() => addTaskInput?.focus());
+  window.appMenu?.onNewList(() => addList());
   window.appMenu?.onToggleLeftSidebar(() => toggleSidebarLeft());
   window.appMenu?.onToggleRightSidebar(() => toggleSidebarRight());
   window.appMenu?.onToggleCompletedSection(() => toggleCompletedSection());
@@ -165,6 +166,22 @@ function handleGlobalKeydown(event) {
     return;
   }
 
+  // Same reasoning while the new-list modal is open: Enter in the name input
+  // submits, Escape cancels, and Tab cycles input -> Create -> Cancel -> input
+  // (circular) instead of falling through to list shortcuts or the blanket
+  // Tab-suppression below.
+  if (isNewListModalOpen) {
+    if (event.key === 'Escape') {
+      hideNewListModal();
+    } else if (event.key === 'Enter') {
+      handleCreateList();
+    } else if (event.key === 'Tab') {
+      event.preventDefault();
+      cycleNewListModalFocus(event);
+    }
+    return;
+  }
+
   // The app has no defined tab order, so the browser's default focus-traversal
   // behavior would jump focus unpredictably between buttons/inputs; suppress it,
   // except to toggle focus between the task detail title/notes textareas, where
@@ -184,17 +201,6 @@ function handleGlobalKeydown(event) {
   if (contextMenuList) {
     if (event.key === 'Escape') {
       hideTaskListContextMenu();
-    }
-    return;
-  }
-
-  // Same reasoning while the new-list modal is open, so Enter in the name input
-  // submits and Escape cancels instead of falling through to list shortcuts.
-  if (isNewListModalOpen) {
-    if (event.key === 'Escape') {
-      hideNewListModal();
-    } else if (event.key === 'Enter') {
-      handleCreateList();
     }
     return;
   }

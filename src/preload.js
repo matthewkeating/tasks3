@@ -30,6 +30,7 @@ contextBridge.exposeInMainWorld('googleTasks', {
 // by the native Menu (main/menu.js) rather than the renderer's keydown listener.
 contextBridge.exposeInMainWorld('appMenu', {
   onNewTask: (callback) => ipcRenderer.on('menu:new-task', callback),
+  onNewList: (callback) => ipcRenderer.on('menu:new-list', callback),
   onToggleLeftSidebar: (callback) => ipcRenderer.on('menu:toggle-left-sidebar', callback),
   onToggleRightSidebar: (callback) => ipcRenderer.on('menu:toggle-right-sidebar', callback),
   onToggleCompletedSection: (callback) => ipcRenderer.on('menu:toggle-completed-section', callback),
