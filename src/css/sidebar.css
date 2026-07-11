@@ -84,6 +84,10 @@
   background: var(--color-surface-active);
 }
 
+.task-list-item:focus {
+  outline: none;
+}
+
 .task-list-item-title {
   display: block;
   /*

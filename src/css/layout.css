@@ -76,6 +76,10 @@ header {
   background: var(--color-surface-active);
 }
 
+.icon-button:focus {
+  outline: none;
+}
+
 .header-left-button {
   -webkit-app-region: no-drag;
   position: absolute;
