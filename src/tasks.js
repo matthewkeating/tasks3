@@ -3,6 +3,12 @@
 let tasks = [];
 let selectedTaskId = null;
 let draggedTaskId = null;
+// The task the detail pane's title/notes fields belong to, captured on focus.
+// Clicking another task row updates selectedTaskId (via its mousedown handler)
+// before the blur fires on whichever detail field was focused, so blur handlers
+// can't trust selectedTaskId to still name the task being edited—they need the
+// id captured at focus time instead.
+let detailEditingTaskId = null;
 
 const taskList = document.getElementById('taskList');
 const activeContainer = document.getElementById('activeContainer');
@@ -175,7 +181,7 @@ function syncSelectedTaskTitleRow() {
 }
 
 function handleTaskDetailTitleBlur() {
-  const task = tasks.find((t) => t.id === selectedTaskId);
+  const task = tasks.find((t) => t.id === detailEditingTaskId);
   if (!task) return;
   const newTitle = taskDetailTitleInput.value.trim();
   if (newTitle !== task.title) {
@@ -184,7 +190,7 @@ function handleTaskDetailTitleBlur() {
 }
 
 function handleTaskDetailNotesBlur() {
-  const task = tasks.find((t) => t.id === selectedTaskId);
+  const task = tasks.find((t) => t.id === detailEditingTaskId);
   if (!task) return;
   const newNotes = taskDetailNotesInput.value;
   if (newNotes !== (task.notes ?? '')) {
@@ -513,6 +519,9 @@ function setupTaskEventListeners() {
   // Enter commits the title (mirrors the add-task input); notes commit on blur only,
   // since Enter should insert a newline in a multi-line notes field.
   if (taskDetailTitleInput) {
+    taskDetailTitleInput.addEventListener('focus', () => {
+      detailEditingTaskId = selectedTaskId;
+    });
     taskDetailTitleInput.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -527,6 +536,9 @@ function setupTaskEventListeners() {
   }
 
   if (taskDetailNotesInput) {
+    taskDetailNotesInput.addEventListener('focus', () => {
+      detailEditingTaskId = selectedTaskId;
+    });
     taskDetailNotesInput.addEventListener('blur', handleTaskDetailNotesBlur);
   }
 
