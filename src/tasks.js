@@ -278,6 +278,10 @@ function selectTask(taskId) {
   // still names the outgoing task, so any unsaved edit is committed correctly.
   taskDetailTitleInput?.blur();
   taskDetailNotesInput?.blur();
+  // Clicking a row blurs addTaskInput naturally (mousedown shifts focus away),
+  // but keyboard-driven selection (Cmd+Shift+[/]) never touches focus on its
+  // own, so do it explicitly here to cover both paths.
+  addTaskInput?.blur();
   deselectTask();
   selectedTaskId = taskId;
   applySelectionClasses(taskId);
