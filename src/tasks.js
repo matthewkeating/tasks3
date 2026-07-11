@@ -245,6 +245,16 @@ function applySelectionClasses(taskId) {
 
 function selectTask(taskId) {
   if (selectedTaskId === taskId) return;
+  // Force a synchronous blur/commit of whichever detail field is focused before
+  // switching selectedTaskId. Without this, clicking another task row changes
+  // selectedTaskId (and calls renderTaskDetail) before the field's blur fires
+  // naturally—renderTaskDetail then sees the field still focused and skips
+  // repainting it (to avoid clobbering in-progress typing), leaving the old
+  // task's note/title displayed under the newly selected task until the next
+  // poll. Blurring here also runs handleTaskDetail*Blur while detailEditingTaskId
+  // still names the outgoing task, so any unsaved edit is committed correctly.
+  taskDetailTitleInput?.blur();
+  taskDetailNotesInput?.blur();
   deselectTask();
   selectedTaskId = taskId;
   applySelectionClasses(taskId);
