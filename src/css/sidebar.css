@@ -32,9 +32,16 @@
   border-left: 0;
 }
 
-.sidebar-content {
+.sidebar-left-content {
   flex: 1;
   padding: 18px 12px 12px 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-right-content {
+  flex: 1;
+  padding: 10px 12px 12px 12px;
   overflow-y: auto;
   overflow-x: hidden;
 }
