@@ -9,6 +9,12 @@ let draggedTaskId = null;
 // can't trust selectedTaskId to still name the task being edited—they need the
 // id captured at focus time instead.
 let detailEditingTaskId = null;
+// Notes autosave: committed on blur (see handleTaskDetailNotesBlur) and also
+// after a pause in typing, so a long editing session without blurring still
+// persists periodically. Timer is cleared on blur to avoid a stale debounced
+// save firing (and re-diffing against the wrong task) after the field commits.
+let notesDebounceTimer = null;
+const NOTES_DEBOUNCE_MS = 700;
 
 const taskList = document.getElementById('taskList');
 const activeContainer = document.getElementById('activeContainer');
@@ -189,13 +195,30 @@ function handleTaskDetailTitleBlur() {
   }
 }
 
-function handleTaskDetailNotesBlur() {
+function commitNotesIfChanged() {
   const task = tasks.find((t) => t.id === detailEditingTaskId);
   if (!task) return;
   const newNotes = taskDetailNotesInput.value;
   if (newNotes !== (task.notes ?? '')) {
     handleUpdateNotes(task, newNotes);
   }
+}
+
+function handleTaskDetailNotesInput() {
+  clearTimeout(notesDebounceTimer);
+  notesDebounceTimer = setTimeout(() => {
+    notesDebounceTimer = null;
+    commitNotesIfChanged();
+  }, NOTES_DEBOUNCE_MS);
+}
+
+function handleTaskDetailNotesBlur() {
+  // Cancel any pending debounced save—commitNotesIfChanged below covers it,
+  // and a timer left running would fire after blur, re-reading
+  // detailEditingTaskId once it may already point at a different task.
+  clearTimeout(notesDebounceTimer);
+  notesDebounceTimer = null;
+  commitNotesIfChanged();
 }
 
 async function handleAddTask(title, position) {
@@ -526,8 +549,9 @@ function setupTaskEventListeners() {
     toggleSidebarRightButton.addEventListener('click', toggleSidebarRight);
   }
 
-  // Enter commits the title (mirrors the add-task input); notes commit on blur only,
-  // since Enter should insert a newline in a multi-line notes field.
+  // Enter commits the title (mirrors the add-task input); notes have no Enter
+  // handling, since Enter should insert a newline in a multi-line notes field—
+  // they commit on blur and, via handleTaskDetailNotesInput, on a typing pause.
   if (taskDetailTitleInput) {
     taskDetailTitleInput.addEventListener('focus', () => {
       detailEditingTaskId = selectedTaskId;
@@ -549,6 +573,7 @@ function setupTaskEventListeners() {
     taskDetailNotesInput.addEventListener('focus', () => {
       detailEditingTaskId = selectedTaskId;
     });
+    taskDetailNotesInput.addEventListener('input', handleTaskDetailNotesInput);
     taskDetailNotesInput.addEventListener('blur', handleTaskDetailNotesBlur);
   }
 

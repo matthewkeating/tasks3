@@ -159,6 +159,14 @@ async function selectTaskList(listId) {
   // Re-clicking the already-selected list is a no-op: avoids a pointless
   // re-render and re-fetch on every click of the sidebar.
   if (listId === selectedListId) return;
+  // Force a synchronous blur/commit of whichever detail field is focused before
+  // switching lists (mirrors selectTask() in tasks.js). Without this, the field
+  // stays focused through loadTasksForSelectedList()'s await, which replaces
+  // `tasks` with the new list's data—by the time the incidental blur from
+  // addTaskInput.focus() below fires, detailEditingTaskId no longer resolves
+  // in `tasks`, and the pending edit is silently dropped.
+  taskDetailTitleInput?.blur();
+  taskDetailNotesInput?.blur();
   selectedListId = listId;
   renderTaskLists();
   await loadTasksForSelectedList();
