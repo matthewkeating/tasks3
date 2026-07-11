@@ -1,8 +1,10 @@
-const { app, BrowserWindow, Menu, nativeTheme } = require('electron');
+const { app, BrowserWindow, Menu, nativeTheme, globalShortcut } = require('electron');
 const path = require('node:path');
 const { registerIpcHandlers } = require('./main/ipc');
 const { buildMenu } = require('./main/menu');
 const { loadWindowState, trackWindowState } = require('./main/windowStateStore');
+
+let mainWindow;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
@@ -42,15 +44,28 @@ function createWindow () {
     win.show();
   });
 
+  mainWindow = win;
 }
 
 app.whenReady().then(() => {
   registerIpcHandlers()
   createWindow()
+  globalShortcut.register('Cmd+Shift+\'', () => {
+    if (mainWindow.isVisible()) {
+      mainWindow.hide();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
 })
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('quit', () => {
+  globalShortcut.unregisterAll();
 });
