@@ -113,7 +113,7 @@ function isEditingSomething() {
 async function pollForUpdates() {
   if (!document.hasFocus()) return;
   if (isEditingSomething()) return;
-  if (isNewListModalOpen || pendingDeleteTask || pendingDeleteList || draggedTaskId) return;
+  if (isNewListModalOpen || isAnyConfirmModalOpen() || draggedTaskId) return;
   if (taskLists.length === 0) return;
 
   let lists;
@@ -175,24 +175,10 @@ function handleGlobalKeydown(event) {
     return;
   }
 
-  // While the delete confirmation modal is open, Escape/Enter target it instead of
-  // the usual list shortcuts (which would otherwise fire underneath the modal).
-  if (pendingDeleteTask) {
-    if (event.key === 'Escape') {
-      hideDeleteConfirmModal();
-    } else if (event.key === 'Enter') {
-      confirmPendingDelete();
-    }
-    return;
-  }
-
-  // Same reasoning for the delete-list confirmation modal.
-  if (pendingDeleteList) {
-    if (event.key === 'Escape') {
-      hideDeleteListConfirmModal();
-    } else if (event.key === 'Enter') {
-      confirmPendingDeleteList();
-    }
+  // While a destructive confirm modal (delete task or delete list) is open,
+  // Escape/Enter target it instead of the usual list shortcuts (which would
+  // otherwise fire underneath the modal).
+  if (handleConfirmModalKeydown(event)) {
     return;
   }
 

@@ -4,8 +4,6 @@ let taskLists = [];
 let selectedListId = null;
 // True while the new-list modal is open; gates Escape/Enter in handleGlobalKeydown.
 let isNewListModalOpen = false;
-// List pending confirmation in the delete-list modal; null when the modal is closed.
-let pendingDeleteList = null;
 // List the right-click context menu is currently showing for; null when closed.
 let contextMenuList = null;
 
@@ -26,8 +24,21 @@ const deleteListConfirmDeleteBtn = document.getElementById('deleteListConfirmDel
 const taskListContextMenu = document.getElementById('taskListContextMenu');
 const taskListContextMenuDelete = document.getElementById('taskListContextMenuDelete');
 
-if (deleteListConfirmModalIcon) {
-  deleteListConfirmModalIcon.innerHTML = ICONS.trash;
+// Deletion is destructive and irreversible via the UI (and also removes every
+// task in the list), so it's gated behind a confirmation modal—same pattern
+// as the delete-task modal in tasks.js, but scoped to lists.
+const deleteListConfirmModal = createConfirmModal({
+  overlay: deleteListConfirmModalOverlay,
+  icon: deleteListConfirmModalIcon,
+  iconMarkup: ICONS.trash,
+  message: deleteListConfirmModalMessage,
+  cancelBtn: deleteListConfirmCancelBtn,
+  deleteBtn: deleteListConfirmDeleteBtn,
+  onConfirm: handleDeleteTaskList,
+});
+
+function showDeleteListConfirmModal(list) {
+  deleteListConfirmModal.show(list, `Delete "${list.title}"? This can't be undone.`);
 }
 
 function renderSidebarMessage(html) {
@@ -219,32 +230,6 @@ function hideTaskListContextMenu() {
   taskListContextMenu?.classList.add('is-hidden');
 }
 
-// Deletion is destructive and irreversible via the UI (and also removes every
-// task in the list), so it's gated behind a confirmation modal—same pattern
-// as showDeleteConfirmModal in tasks.js, but scoped to lists.
-function showDeleteListConfirmModal(list) {
-  pendingDeleteList = list;
-  if (deleteListConfirmModalMessage) {
-    deleteListConfirmModalMessage.textContent = `Delete "${list.title}"? This can't be undone.`;
-  }
-  if (deleteListConfirmModalOverlay) {
-    deleteListConfirmModalOverlay.classList.remove('is-hidden');
-  }
-}
-
-function hideDeleteListConfirmModal() {
-  pendingDeleteList = null;
-  if (deleteListConfirmModalOverlay) {
-    deleteListConfirmModalOverlay.classList.add('is-hidden');
-  }
-}
-
-function confirmPendingDeleteList() {
-  const list = pendingDeleteList;
-  hideDeleteListConfirmModal();
-  if (list) handleDeleteTaskList(list);
-}
-
 // Optimistic like task deletion in tasks.js: mutate local state, re-render,
 // then fire the IPC call; on failure, re-fetch everything to resync, since
 // there's no narrower per-list resync path.
@@ -383,23 +368,6 @@ function setupTaskListEventListeners() {
       const list = contextMenuList;
       hideTaskListContextMenu();
       if (list) showDeleteListConfirmModal(list);
-    });
-  }
-
-  if (deleteListConfirmCancelBtn) {
-    deleteListConfirmCancelBtn.addEventListener('click', hideDeleteListConfirmModal);
-  }
-
-  if (deleteListConfirmDeleteBtn) {
-    deleteListConfirmDeleteBtn.addEventListener('click', confirmPendingDeleteList);
-  }
-
-  // Clicking the overlay backdrop (outside the modal card) cancels, same as Cancel.
-  if (deleteListConfirmModalOverlay) {
-    deleteListConfirmModalOverlay.addEventListener('click', (event) => {
-      if (event.target === deleteListConfirmModalOverlay) {
-        hideDeleteListConfirmModal();
-      }
     });
   }
 

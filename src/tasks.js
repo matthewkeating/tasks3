@@ -3,8 +3,6 @@
 let tasks = [];
 let selectedTaskId = null;
 let draggedTaskId = null;
-// Task pending confirmation in the delete modal; null when the modal is closed.
-let pendingDeleteTask = null;
 
 const taskList = document.getElementById('taskList');
 const activeContainer = document.getElementById('activeContainer');
@@ -24,8 +22,20 @@ const deleteConfirmModalMessage = document.getElementById('deleteConfirmModalMes
 const deleteConfirmCancelBtn = document.getElementById('deleteConfirmCancelBtn');
 const deleteConfirmDeleteBtn = document.getElementById('deleteConfirmDeleteBtn');
 
-if (deleteConfirmModalIcon) {
-  deleteConfirmModalIcon.innerHTML = ICONS.trash;
+// Deletion is destructive and irreversible via the UI, so it's gated behind a
+// confirmation modal rather than firing immediately from the trash icon or shortcut.
+const deleteTaskConfirmModal = createConfirmModal({
+  overlay: deleteConfirmModalOverlay,
+  icon: deleteConfirmModalIcon,
+  iconMarkup: ICONS.trash,
+  message: deleteConfirmModalMessage,
+  cancelBtn: deleteConfirmCancelBtn,
+  deleteBtn: deleteConfirmDeleteBtn,
+  onConfirm: handleDeleteTask,
+});
+
+function showDeleteConfirmModal(task) {
+  deleteTaskConfirmModal.show(task, `Delete "${task.title || 'Untitled task'}"? This can't be undone.`);
 }
 
 async function loadTasksForSelectedList() {
@@ -97,31 +107,6 @@ async function handleToggleCompleted(task) {
   } catch {
     await resyncAfterError(listId);
   }
-}
-
-// Deletion is destructive and irreversible via the UI, so it's gated behind a
-// confirmation modal rather than firing immediately from the trash icon or shortcut.
-function showDeleteConfirmModal(task) {
-  pendingDeleteTask = task;
-  if (deleteConfirmModalMessage) {
-    deleteConfirmModalMessage.textContent = `Delete "${task.title || 'Untitled task'}"? This can't be undone.`;
-  }
-  if (deleteConfirmModalOverlay) {
-    deleteConfirmModalOverlay.classList.remove('is-hidden');
-  }
-}
-
-function hideDeleteConfirmModal() {
-  pendingDeleteTask = null;
-  if (deleteConfirmModalOverlay) {
-    deleteConfirmModalOverlay.classList.add('is-hidden');
-  }
-}
-
-function confirmPendingDelete() {
-  const task = pendingDeleteTask;
-  hideDeleteConfirmModal();
-  if (task) handleDeleteTask(task);
 }
 
 async function handleDeleteTask(task) {
@@ -543,23 +528,6 @@ function setupTaskEventListeners() {
 
   if (taskDetailNotesInput) {
     taskDetailNotesInput.addEventListener('blur', handleTaskDetailNotesBlur);
-  }
-
-  if (deleteConfirmCancelBtn) {
-    deleteConfirmCancelBtn.addEventListener('click', hideDeleteConfirmModal);
-  }
-
-  if (deleteConfirmDeleteBtn) {
-    deleteConfirmDeleteBtn.addEventListener('click', confirmPendingDelete);
-  }
-
-  // Clicking the overlay backdrop (outside the modal card) cancels, same as Cancel.
-  if (deleteConfirmModalOverlay) {
-    deleteConfirmModalOverlay.addEventListener('click', (event) => {
-      if (event.target === deleteConfirmModalOverlay) {
-        hideDeleteConfirmModal();
-      }
-    });
   }
 
   if (addTaskInput) {

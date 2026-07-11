@@ -25,16 +25,18 @@ Main process files are split one-per-concern (IPC wiring, auth, API client, toke
 - `main/googleTasksClient.js`: Wraps the googleapis library for Tasks API (pagination built-in)
 - `main/tokenStore.js`: Persists OAuth tokens to disk
 - `main/menu.js`: Builds the native application `Menu`; menu accelerators are the single owner of app-level keyboard shortcuts (see IPC Communication below)
+- `main/windowStateStore.js`: Persists window bounds (size, position, maximized state) to disk so the app reopens where the user left it
 
 **Renderer Process:**
 
 Loaded as plain `<script>` tags (no bundler/module system—see `src/index.html`), so every file shares one global scope, same as `icons.js`'s global `ICONS`. Load order in `index.html` matters only in that a file must appear before another file whose top-level code runs immediately at parse time; nothing here does that, since all cross-file calls happen from within functions invoked later (after `DOMContentLoaded`). Split one-per-view/concern, same rationale as the main-process split above:
 - `src/index.js`: App shell only—`init()`, wiring up each module's `setup*EventListeners()`, background polling (`pollForUpdates`), and global keyboard shortcuts (`handleGlobalKeydown`). Owns nothing that's specific to task lists or tasks individually, since polling and keydown handling touch both.
 - `src/taskLists.js`: Left-sidebar view—state (`taskLists`, `selectedListId`, `isNewListModalOpen`), list CRUD, rename, and rendering (`renderTaskLists`)
-- `src/tasks.js`: Main task area + right-hand detail pane—state (`tasks`, `selectedTaskId`, `draggedTaskId`, `pendingDeleteTask`), task CRUD, selection, and rendering (`renderTasks`, `renderTaskDetail`)
+- `src/tasks.js`: Main task area + right-hand detail pane—state (`tasks`, `selectedTaskId`, `draggedTaskId`), task CRUD, selection, and rendering (`renderTasks`, `renderTaskDetail`)
 - `src/dragDrop.js`: Native HTML5 drag-and-drop for reordering tasks; reads/writes `tasks` state from `tasks.js`
 - `src/auth.js`: Sign-in modal and `initGoogleTasks()`/`handleSignIn()`
 - `src/inlineEdit.js`: Shared contenteditable rename mechanics (`beginInlineEdit`), used by both `beginTitleEdit` (`tasks.js`) and `beginListTitleEdit` (`taskLists.js`)
+- `src/confirmModal.js`: Shared destructive-confirmation modal mechanics (`createConfirmModal`), used by the delete-task modal (`tasks.js`) and delete-list modal (`taskLists.js`); also exposes `isAnyConfirmModalOpen()`/`handleConfirmModalKeydown()` so `index.js` can gate polling and route Escape/Enter without knowing about each modal individually
 - `src/index.html`: Static structure for header, sidebar, main task area, and empty state
 - `src/css/`: Split one-per-area (`layout`, `sidebar`, `task-list`, `task-detail`, `modal`, `theme`), each theme-aware via CSS custom properties defined in `theme.css`
 
