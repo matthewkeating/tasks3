@@ -18,6 +18,8 @@ function createWindow () {
     // remove the default titlebar
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 14, y: 14 },
+    minWidth: 495,
+    minHeight: 300,
     ...(windowState ? { width: windowState.width, height: windowState.height, x: windowState.x, y: windowState.y } : {}),
     show: false, // don't show until the renderer has painted, to avoid a white flash
     // Matches theme.css's --color-bg-app so there's no white flash before first paint
