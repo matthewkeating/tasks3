@@ -22,7 +22,7 @@
 /* Task List Title */
 .task-list-title {
   margin: 0 0 16px;
-  font-size: 28px;
+  font-size: 34px;
   font-weight: 600;
   color: var(--color-text-primary);
   user-select: none;

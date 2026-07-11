@@ -34,7 +34,7 @@
 
 .sidebar-content {
   flex: 1;
-  padding: 12px;
+  padding: 18px 12px 12px 12px;
   overflow-y: auto;
   overflow-x: hidden;
 }
