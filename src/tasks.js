@@ -176,6 +176,19 @@ async function handleUpdateNotes(task, newNotes) {
   }
 }
 
+// Mirrors live typing in the detail title textarea into the corresponding row
+// in the list (reciprocal of syncSelectedTaskDetailTitle in the inline-editing
+// section below). Skipped if the row is itself mid inline-edit (its title div
+// won't match `.task-title` while editing—see beginTitleEdit)—that direction
+// is handled by the row's own live-input listener instead.
+function syncSelectedTaskTitleRow() {
+  if (!selectedTaskId) return;
+  const rowTitle = taskList.querySelector(`.task[data-id="${CSS.escape(selectedTaskId)}"] .task-title`);
+  if (rowTitle) {
+    applyTaskTitleDisplay(rowTitle, taskDetailTitleInput.value);
+  }
+}
+
 function handleTaskDetailTitleBlur() {
   const task = tasks.find((t) => t.id === selectedTaskId);
   if (!task) return;
@@ -345,6 +358,20 @@ function renderTasks() {
   }
 }
 
+// Shared idle-state rendering for a task title: empty titles show the "No Title"
+// placeholder (italicized via .noTitle) instead of blank text. Used for both the
+// initial row render and the live sync from the detail textarea (see
+// syncSelectedTaskTitleRow), so the two stay visually consistent.
+function applyTaskTitleDisplay(el, title) {
+  if (title.length === 0) {
+    el.textContent = 'No Title';
+    el.classList.add('noTitle');
+  } else {
+    el.textContent = title;
+    el.classList.remove('noTitle');
+  }
+}
+
 // Builds one task row: [complete circle] [title] [quick actions] [note indicator].
 // User data enters the DOM via textContent only (XSS-safe); icon markup is
 // static trusted strings from icons.js.
@@ -375,12 +402,7 @@ function getListItem(task) {
   const title = document.createElement('div');
   title.dataset.type = 'selectable';
   title.classList.add('task-title');
-  if (task.title.length === 0) {
-    title.textContent = 'No Title';
-    title.classList.add('noTitle');
-  } else {
-    title.textContent = task.title;
-  }
+  applyTaskTitleDisplay(title, task.title);
   if (task.completed) {
     title.classList.add('task-title-completed');
   }
@@ -449,7 +471,19 @@ function getEmptyDropContainer(message) {
 // Inline title editing (double-click a title)
 // ---------------------------------------------------------------------------
 
+// Mirrors live typing in a row's contenteditable title into the detail pane's
+// title textarea (reciprocal of syncSelectedTaskTitleRow below), so the two
+// stay in sync while editing. Only fires for the selected task, since that's
+// the only one the detail pane is ever showing.
+function syncSelectedTaskDetailTitle(taskId, rawText) {
+  if (selectedTaskId !== taskId || document.activeElement === taskDetailTitleInput) return;
+  taskDetailTitleInput.value = rawText;
+  growTaskDetailTitle();
+}
+
 function beginTitleEdit(titleDiv, task) {
+  const handleLiveInput = () => syncSelectedTaskDetailTitle(task.id, titleDiv.textContent);
+
   beginInlineEdit(titleDiv, {
     originalValue: task.title,
     onStart: (el) => {
@@ -461,17 +495,14 @@ function beginTitleEdit(titleDiv, task) {
         el.classList.remove('noTitle');
         el.textContent = '';
       }
+      el.addEventListener('input', handleLiveInput);
     },
     onFinish: (el, typedValue) => {
+      el.removeEventListener('input', handleLiveInput);
       el.classList.add('task-title');
       el.classList.remove('task-title-is-editing');
       el.parentElement.setAttribute('draggable', 'true');
-      if (typedValue.length === 0) {
-        el.textContent = 'No Title';
-        el.classList.add('noTitle');
-      } else {
-        el.textContent = typedValue;
-      }
+      applyTaskTitleDisplay(el, typedValue);
       return typedValue;
     },
     onCommit: (newTitle) => handleRenameTask(task, newTitle),
@@ -502,7 +533,10 @@ function setupTaskEventListeners() {
         taskDetailTitleInput.blur();
       }
     });
-    taskDetailTitleInput.addEventListener('input', growTaskDetailTitle);
+    taskDetailTitleInput.addEventListener('input', () => {
+      growTaskDetailTitle();
+      syncSelectedTaskTitleRow();
+    });
     taskDetailTitleInput.addEventListener('blur', handleTaskDetailTitleBlur);
   }
 

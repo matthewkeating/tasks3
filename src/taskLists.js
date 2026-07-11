@@ -181,15 +181,31 @@ async function handleCreateList() {
 // titles have no blank placeholder state—an empty commit just reverts to the
 // original title.
 function beginListTitleEdit(titleSpan, list) {
+  // One-way live mirror into the read-only header while editing the selected
+  // list's title—the header (unlike the sidebar row) is never itself an edit
+  // target, so there's no reciprocal direction to wire up.
+  const handleLiveInput = () => {
+    if (list.id === selectedListId && taskListTitle) {
+      taskListTitle.textContent = titleSpan.textContent;
+    }
+  };
+
   beginInlineEdit(titleSpan, {
     originalValue: list.title,
     onStart: (el) => {
       el.classList.add('task-list-item-title-is-editing');
+      el.addEventListener('input', handleLiveInput);
     },
     onFinish: (el, typedValue) => {
+      el.removeEventListener('input', handleLiveInput);
       el.classList.remove('task-list-item-title-is-editing');
       const finalTitle = typedValue.length === 0 ? list.title : typedValue;
       el.textContent = finalTitle;
+      // Reverts a cancelled/emptied edit's live mirror back to the true title—
+      // onCommit won't fire in that case since finalTitle === originalValue.
+      if (list.id === selectedListId && taskListTitle) {
+        taskListTitle.textContent = finalTitle;
+      }
       return finalTitle;
     },
     onCommit: (finalTitle) => handleRenameTaskList(list, finalTitle),
