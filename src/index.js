@@ -218,6 +218,26 @@ function handleGlobalKeydown(event) {
     return;
   }
 
+  // Enter, with a task selected and nothing being edited, jumps focus to that
+  // task's notes field—revealing the right sidebar first if it's collapsed.
+  // addTaskInput is excluded even though isEditingSomething() ignores it (same
+  // reasoning as the guard above): otherwise Enter to add a task would also
+  // steal focus into notes whenever a task was already selected.
+  if (event.key === 'Enter' && selectedTaskId !== null && event.target !== addTaskInput && !isEditingSomething()) {
+    // Without this, the keypress's default action (insert newline) still applies
+    // to taskDetailNotesInput once it's focused, even though it wasn't the target
+    // Enter was pressed on.
+    event.preventDefault();
+    if (sidebarRight.classList.contains('is-hidden')) {
+      toggleSidebarRight();
+    }
+    taskDetailNotesInput.focus();
+    // .focus() alone leaves the cursor wherever it last was (or selects all, in
+    // some browsers)—pin it to the start so this is consistent every time.
+    taskDetailNotesInput.setSelectionRange(0, 0);
+    return;
+  }
+
   if (event.key === 'Escape') {
     deselectTask();
   }
