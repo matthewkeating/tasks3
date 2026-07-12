@@ -7,6 +7,15 @@
   overflow: hidden;
 }
 
+/* Held at a fixed pixel width while the window resizes around the left sidebar
+   (see windowSizing.js), so the task area can't reflow mid-resize. The auto margin
+   parks any space the sidebar hasn't claimed yet against the window's right edge,
+   where it shows the app background and is therefore invisible. */
+.main-content.is-width-pinned {
+  flex: 0 0 auto;
+  margin-right: auto;
+}
+
 /* Task List Container: the title and add-task row live here, above a
    separate scroll area, so they stay put while tasks scroll beneath them */
 .task-list-container {

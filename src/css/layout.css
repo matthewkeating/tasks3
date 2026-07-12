@@ -25,6 +25,33 @@ body:has(.sidebar-right:not(.is-hidden)) header {
   --sidebar-seam-right: 275px;
 }
 
+/* While the left sidebar opens or closes, the window is resizing to make room for
+   it (see windowSizing.js) and --left-sidebar-live is exactly the width the window
+   has gained so far. Everything anchored to the sidebar's edge reads that single
+   value instead of running its own transition, so nothing can drift out of step
+   with the frame. --window-base-width (the window's width without the sidebar) is
+   set on body by windowSizing.js for the duration. */
+body.is-window-sizing {
+  --left-sidebar-live: clamp(0px, 100vw - var(--window-base-width), 220px);
+}
+
+body.is-window-sizing header {
+  --sidebar-seam: var(--left-sidebar-live);
+  transition: none;
+}
+
+/* Both follow the sidebar's edge but can't cross into the traffic lights, so each
+   is floored at the position it holds while the sidebar is hidden. */
+body.is-window-sizing .header-left-button {
+  left: max(80px, calc(var(--left-sidebar-live) - 44px));
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body.is-window-sizing .offline-message {
+  left: max(118px, calc(var(--left-sidebar-live) + 20px));
+  transition: none;
+}
+
 /* creates space at the top of the window that allows the app window to be moved */
 header {
   -webkit-app-region: drag;

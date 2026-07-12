@@ -187,13 +187,16 @@ async function selectTaskList(listId) {
 // Shared toggle/persist/restore mechanics live in persistedToggle.js; see the
 // restore()-runs-pre-paint note there for why restoreSidebarLeftState is called
 // from init() before first paint.
+//
+// Unlike the right sidebar, this one doesn't take its space from the task area—the
+// window grows and shrinks around it—so the class flip is handed to windowSizing.js
+// to apply at the right moment relative to the resize rather than being applied
+// here. restore() stays direct: it runs at launch, where the persisted window
+// bounds already account for the sidebar, so there's nothing to resize.
 const sidebarLeftToggle = makePersistedToggle(sidebarLeft, 'sidebarLeftHidden');
 function toggleSidebarLeft() {
-  sidebarLeftToggle.toggle();
-  // After toggling, notify the main process to animate the window.
-  // The sidebar is visible if it doesn't have the is-hidden class.
-  const isNowVisible = !sidebarLeft.classList.contains('is-hidden');
-  window.windowControls?.toggleSidebar('left', isNowVisible);
+  const isOpening = sidebarLeft.classList.contains('is-hidden');
+  return toggleSidebarLeftWithWindow(isOpening, () => sidebarLeftToggle.toggle());
 }
 function restoreSidebarLeftState() {
   sidebarLeftToggle.restore();

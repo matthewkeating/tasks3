@@ -26,6 +26,7 @@ Main process files are split one-per-concern (IPC wiring, auth, API client, toke
 - `main/tokenStore.js`: Persists OAuth tokens to disk
 - `main/menu.js`: Builds the native application `Menu`; menu accelerators are the single owner of app-level keyboard shortcuts (see IPC Communication below)
 - `main/windowStateStore.js`: Persists window bounds (size, position, maximized state) to disk so the app reopens where the user left it
+- `main/sidebarWindowSizer.js`: Grows/shrinks the window to make room for the left sidebar (see "Left Sidebar Window Resizing" below); owns the work-area clamp and remembers how much width each open actually gained
 
 **Renderer Process:**
 
@@ -39,6 +40,7 @@ Loaded as plain `<script>` tags (no bundler/module system—see `src/index.html`
 - `src/inlineEdit.js`: Shared contenteditable rename mechanics (`beginInlineEdit`), used by both `beginTitleEdit` (`tasks.js`) and `beginListTitleEdit` (`taskLists.js`)
 - `src/confirmModal.js`: Shared destructive-confirmation modal mechanics (`createConfirmModal`), used by the delete-task modal (`tasks.js`) and delete-list modal (`taskLists.js`); also exposes `isAnyConfirmModalOpen()`/`handleConfirmModalKeydown()` so `index.js` can gate polling and route Escape/Enter without knowing about each modal individually
 - `src/persistedToggle.js`: Shared show/hide-with-persistence mechanics (`makePersistedToggle`), used by the two sidebars and the completed section (`taskLists.js`, `taskDetail.js`, `tasks.js`)
+- `src/windowSizing.js`: Renderer half of the left sidebar's window resize (`toggleSidebarLeftWithWindow`), called by `toggleSidebarLeft` in `taskLists.js`; sequences the resize against the sidebar's reveal and pins the task area's width for the duration (see "Left Sidebar Window Resizing" below)
 - `src/index.html`: Static structure for header, sidebar, main task area, and empty state
 - `src/css/`: Split one-per-area (`layout`, `sidebar`, `task-list`, `task-detail`, `modal`, `theme`), each theme-aware via CSS custom properties defined in `theme.css`
 
@@ -100,12 +102,30 @@ Static, always-present elements are cached as top-level `const`s in the module t
 
 ### IPC Communication
 
-Renderer → Main: Use `window.googleTasks.*` or `window.windowControls.*` (exposed in preload.js).  
+Renderer → Main: Use `window.googleTasks.*`, `window.windowControls.*`, or `window.windowSizing.*` (exposed in preload.js). `windowSizing.setLeftSidebarOpen` is an `invoke` rather than a `send` (unlike `windowControls`) because the renderer has to know when the resize has actually landed before it continues—see "Left Sidebar Window Resizing" below.  
 Main → Renderer: Used for native `Menu` accelerators, plus the one systemwide shortcut registered outside the Menu. `main/menu.js` builds the app menu and each item sends a `menu:*` channel (e.g. `menu:new-task`) via `webContents.send`; `window.appMenu.on*` (exposed in preload.js) subscribes to these in `setupMenuListeners()` in `index.js`, which calls the same functions the equivalent keyboard shortcut would call. Separately, `main.js` registers `Cmd+Shift+'` via `globalShortcut` to toggle window visibility (not a menu accelerator, since it must work while the window isn't focused); on show it sends `app:shown`, exposed as `window.appVisibility.onShown` (preload.js), which the renderer uses only to restore focus to `addTaskInput`—hide/show doesn't reload the page, so the selected list and all other state survive untouched. State otherwise flows via explicit IPC invoke calls with Promise handling.
 
 A shortcut should have exactly one owner. If it's backed by a menu accelerator, it must not also be handled in `handleGlobalKeydown`—a menu accelerator and the renderer's `keydown` listener both fire independently when the window has focus, so having both would double-run the action.
 
 IPC handlers are thin wrappers; business logic (auth, API calls) lives in `main/auth.js` and `main/googleTasksClient.js`.
+
+### Left Sidebar Window Resizing
+
+The two sidebars behave differently. The **right** sidebar collapses the way both used to: it takes its space from `.main-content`. The **left** sidebar instead makes room for itself by widening the window—opening it grows the window by 220px, closing it shrinks the window back, and the window's `x` never moves, so only its right edge travels.
+
+The renderer can't resize the window, so this is split across processes: `toggleSidebarLeft()` (`taskLists.js`) delegates to `toggleSidebarLeftWithWindow()` (`windowSizing.js`), which drives `window:setLeftSidebarOpen` → `main/sidebarWindowSizer.js`.
+
+Two invariants make it work, and both are easy to break:
+
+1. **The sidebar's width is derived, not transitioned.** While the window is resizing, `body.is-window-sizing` sets `--left-sidebar-live: clamp(0px, 100vw - var(--window-base-width), 220px)`—literally "the width the window has gained so far"—and the sidebar's `width`, the header's gradient seam, the toggle button and the offline message all read that one value. A CSS transition would be a second, independent timeline racing the OS resize; run even slightly ahead of the frame, it would claim space the window hasn't gained yet and squeeze the task area, which is the exact thing this feature exists to prevent. Don't reintroduce a width transition on `.sidebar-left` for the duration (opacity is fine—it isn't layout).
+
+   This is also why `sidebarWindowSizer` steps the resize itself, a `setBounds` per frame, instead of using Electron's `animate` flag: Chromium doesn't lay the renderer out during a native animated resize, so `100vw` (and with it the sidebar) wouldn't move until the frame settled—the sidebar would pop in fully-formed at the end.
+
+2. **The class flip happens at opposite ends of the resize.** Opening, `is-hidden` comes off *before* the window grows; closing, it goes on *after* the window has finished shrinking. Reverse either and the sidebar's space lands in the task area for as long as the resize takes. This is why `makePersistedToggle`'s `toggle()` is passed into `windowSizing.js` as a callback instead of being called directly—`restore()` still runs directly at launch, since the persisted window bounds already account for the sidebar.
+
+`.main-content` is additionally pinned to its measured pixel width (`.is-width-pinned`) for the duration, which matters in the clamped case below.
+
+**When the window can't grow the full 220px**—it's flush against the screen edge, maximized, or fullscreen—it grows by whatever it can (possibly nothing) and the sidebar takes the shortfall out of the task area, i.e. it degrades into the old behavior. Growth is deliberately clamped to the display work area rather than allowed offscreen: `body` sets `overflow: hidden`, so a window past the screen edge would push the right sidebar (and its notes field) somewhere unreachable. `sidebarWindowSizer` records what each open actually gained so the close gives back exactly that much.
 
 ### Async/Await Error Handling
 

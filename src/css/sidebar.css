@@ -19,6 +19,19 @@
   pointer-events: none;
 }
 
+/* The left sidebar doesn't animate its own width while the window is resizing to
+   make room for it—it takes exactly the width the window has gained (see
+   body.is-window-sizing in layout.css). min-width would otherwise floor it at
+   220px, and a width transition would lag the resize and so claim space the window
+   hasn't gained yet. Opacity still transitions: it's independent of the layout, but
+   its duration has to match RESIZE_DURATION_MS in main/sidebarWindowSizer.js or the
+   contents finish fading before the panel finishes widening. */
+body.is-window-sizing .sidebar-left {
+  width: var(--left-sidebar-live);
+  min-width: 0;
+  transition: opacity 0.4s ease;
+}
+
 /* Right sidebar mirrors the left: border and collapse direction flip to the opposite edge. */
 .sidebar-right {
   border-right: 0;
