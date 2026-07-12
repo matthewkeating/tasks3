@@ -23,6 +23,9 @@
 const LEFT_SIDEBAR_WIDTH = 220; // keep in sync with .sidebar's width in css/sidebar.css
 
 const mainContent = document.querySelector('.main-content');
+// Named to avoid colliding with taskLists.js's `sidebarLeft`: these scripts share
+// one global scope, so two top-level consts of the same name would be a redeclaration.
+const leftSidebar = document.getElementById('sidebarLeft');
 
 // The window is only busy for the length of the resize, and a toggle arriving
 // mid-resize would measure widths that are still in motion, so extra toggles are
@@ -49,6 +52,19 @@ function endWindowSizing() {
   document.body.style.removeProperty('--window-base-width');
   mainContent.classList.remove('is-width-pinned');
   mainContent.style.width = '';
+  leftSidebar.classList.remove('is-content-hidden');
+}
+
+// Starts the contents' fade-in (see .sidebar-left.is-content-hidden in sidebar.css).
+// A transition only runs from a value the browser has settled on, and every class
+// change in the toggle otherwise lands in a single style resolution—the contents
+// would go straight to opacity 1 and snap, whatever duration the CSS asked for. So
+// the hidden state is applied, styles are flushed to make it real, and only then is
+// it released.
+function fadeInSidebarContents() {
+  leftSidebar.classList.add('is-content-hidden');
+  leftSidebar.getBoundingClientRect();
+  leftSidebar.classList.remove('is-content-hidden');
 }
 
 // `applyToggle` flips the sidebar's is-hidden class (and persists it), and runs at
@@ -63,7 +79,10 @@ async function toggleSidebarLeftWithWindow(isOpening, applyToggle) {
 
   try {
     beginWindowSizing(isOpening ? window.innerWidth : window.innerWidth - LEFT_SIDEBAR_WIDTH);
-    if (isOpening) applyToggle();
+    if (isOpening) {
+      applyToggle();
+      fadeInSidebarContents();
+    }
 
     await window.windowSizing.setLeftSidebarOpen(isOpening);
     // The resize has landed in the main process, but the renderer's viewport may
