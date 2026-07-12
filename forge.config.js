@@ -5,6 +5,13 @@ module.exports = {
   packagerConfig: {
     asar: true,
     icon: './assets/AppIcon',
+    osxSign: {
+      identity: 'Tasks Dev Cert',
+      optionsForFile: () => ({
+        hardenedRuntime: false,
+        timestamp: 'none',
+      }),
+    },
   },
   rebuildConfig: {},
   makers: [

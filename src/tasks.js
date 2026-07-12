@@ -246,6 +246,10 @@ async function handleAddTask(title, position) {
     addTaskInput.value = '';
     selectedTaskId = task.id;
     renderTaskArea();
+    // Enter never blurs a text input on its own (unlike a row click), so do it
+    // explicitly—same reasoning as the blur in selectTask()—to hand focus back
+    // to the newly-added row rather than leaving it in addTaskInput.
+    addTaskInput?.blur();
   } catch {
     // Leave the input text in place so the user can retry.
   }
@@ -526,5 +530,8 @@ function beginTitleEdit(titleDiv, task) {
 function setupTaskEventListeners() {
   if (addTaskInput) {
     addTaskInput.addEventListener('keydown', handleAddTaskInputKeydown);
+    // Focusing the add-task input signals intent to create a new task, not act
+    // on the current selection, so drop it (e.g. after Cmd+Shift+' restores focus here).
+    addTaskInput.addEventListener('focus', deselectTask);
   }
 }
