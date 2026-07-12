@@ -19,18 +19,18 @@
   pointer-events: none;
 }
 
-/* The left sidebar doesn't animate its own width while the window is resizing to
-   make room for it—it takes exactly the width the window has gained (see
-   body.is-window-sizing in layout.css). min-width would otherwise floor it at
-   220px, and a width transition would lag the resize and so claim space the window
-   hasn't gained yet.
+/* Neither sidebar animates its own width while the window is resizing to make room
+   for it—each takes exactly the width the window has gained (see body.is-window-sizing
+   in layout.css). min-width would otherwise floor it at its full width, and a width
+   transition would lag the resize and so claim space the window hasn't gained yet.
 
    The panel itself stays fully opaque throughout. Fading it in would mean showing
    the app background through a half-transparent panel, so the sidebar would appear
    to change color as it slid in rather than simply arriving; its contents fade
    instead (see below). */
-body.is-window-sizing .sidebar-left {
-  width: var(--left-sidebar-live);
+body.is-window-sizing-left .sidebar-left,
+body.is-window-sizing-right .sidebar-right {
+  width: var(--sidebar-live);
   min-width: 0;
   opacity: 1;
   transition: none;
@@ -38,22 +38,33 @@ body.is-window-sizing .sidebar-left {
 
 /* The contents keep their full-width layout while the panel is narrower than they
    are, and get clipped by its overflow-x: hidden. Letting them reflow instead would
-   squeeze and ellipsize the list rows on the way in and out, which reads as a
-   squash rather than a slide. The add button is a fixed-width icon button, so it
-   needs no such pin. */
-body.is-window-sizing .sidebar-left-content {
-  /* The panel's 220px less its 1px right border—i.e. exactly the width the contents
-     stretch to once the pin is released. Pinning to the full 220px instead would
-     leave them a pixel wide, and everything would shift left when the slide ended. */
+   squeeze and ellipsize the list rows (and rewrap the notes field) on the way in and
+   out, which reads as a squash rather than a slide. The left sidebar's add button is
+   a fixed-width icon button, so it needs no such pin.
+
+   Each is pinned to its panel's width less that panel's 1px border—i.e. exactly the
+   width the contents stretch to once the pin is released. Pinning to the panel's full
+   width instead would leave them a pixel too wide, and everything inside would shift
+   when the slide ended. */
+body.is-window-sizing-left .sidebar-left-content {
   width: calc(220px - 1px);
 }
 
-/* Fade the contents rather than the panel. Duration matches RESIZE_DURATION_MS in
-   main/sidebarWindowSizer.js—any shorter and they'd finish fading in before the
-   panel had finished widening. */
+body.is-window-sizing-right .sidebar-right-content {
+  width: calc(275px - 1px);
+}
+
+/* Fade the contents rather than the panel. Durations match RESIZE_DURATION_MS in
+   main/sidebarWindowSizer.js, which differ per side so that both panels slide at the
+   same speed—any shorter and the contents would finish fading in before the panel had
+   finished widening. */
 .sidebar-left > .sidebar-left-content,
 .sidebar-left > .sidebar-add {
   transition: opacity 0.4s ease;
+}
+
+.sidebar-right > .sidebar-right-content {
+  transition: opacity 0.5s ease;
 }
 
 /* The starting point of that fade, applied and then removed by windowSizing.js with
@@ -61,7 +72,7 @@ body.is-window-sizing .sidebar-left-content {
    actually settled on, and every class change in the toggle otherwise lands in one
    style resolution. `transition: none` is what makes the flushed state land at 0
    instantly instead of easing toward it. */
-.sidebar-left.is-content-hidden > * {
+.sidebar.is-content-hidden > * {
   opacity: 0;
   transition: none;
 }

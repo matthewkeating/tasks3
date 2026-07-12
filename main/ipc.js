@@ -25,9 +25,9 @@ function handleTaskCall(channel, fn, fallback) {
 function registerIpcHandlers() {
   // Resolves only once the window has finished resizing: the renderer sequences the
   // sidebar's slide around this, so it needs to know when the frame has settled.
-  ipcMain.handle('window:setLeftSidebarOpen', (event, isOpen) => {
+  ipcMain.handle('window:setSidebarOpen', (event, side, isOpen) => {
     const win = BrowserWindow.fromWebContents(event.sender);
-    return win ? sidebarWindowSizer.setLeftSidebarOpen(win, isOpen) : undefined;
+    return win ? sidebarWindowSizer.setSidebarOpen(win, side, isOpen) : undefined;
   });
 
   // Auth handlers surface their own errors to the renderer, so they aren't wrapped.

@@ -25,9 +25,21 @@ const taskDetailTitleInput = document.getElementById('taskDetailTitle');
 const taskDetailNotesInput = document.getElementById('taskDetailNotes');
 
 // Shared toggle/persist/restore mechanics live in persistedToggle.js.
+//
+// This sidebar doesn't take its space from the task area—the window grows and
+// shrinks around it (as it does for the left sidebar too)—so the class flip is
+// handed to windowSizing.js to apply at the right moment relative to the resize
+// rather than being applied here. restore() stays direct: it runs at launch, where
+// the persisted window bounds already account for the sidebar, so there's nothing
+// to resize.
 const sidebarRightToggle = makePersistedToggle(sidebarRight, 'sidebarRightHidden');
-function toggleSidebarRight() {
-  sidebarRightToggle.toggle();
+async function toggleSidebarRight() {
+  const isOpening = sidebarRight.classList.contains('is-hidden');
+  await toggleSidebarWithWindow('right', isOpening, () => sidebarRightToggle.toggle());
+  // The pane's width is derived from the window's while it resizes, not transitioned,
+  // so no transitionend fires to size the title textarea against the width it ended
+  // up with (see setupTaskDetailEventListeners).
+  if (isOpening) growTaskDetailTitle();
 }
 function restoreSidebarRightState() {
   sidebarRightToggle.restore();
@@ -38,6 +50,9 @@ function restoreSidebarRightState() {
 // (handleGlobalKeydown in index.js) and the row's edit icon (tasks.js).
 function focusTaskNotesForEdit() {
   if (sidebarRight.classList.contains('is-hidden')) {
+    // Deliberately not awaited: the pane is un-hidden synchronously, before the
+    // window has finished growing around it, so the field can take focus right away
+    // rather than after the slide—typing is never held up by the animation.
     toggleSidebarRight();
   }
   taskDetailNotesInput.focus();

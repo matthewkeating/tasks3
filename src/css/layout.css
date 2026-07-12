@@ -20,35 +20,48 @@ body:has(.sidebar-left.is-hidden) header {
   --sidebar-seam: 0px;
 }
 
-/* mirror of the above for the right sidebar: seam only appears while it's open */
-body:has(.sidebar-right:not(.is-hidden)) header {
-  --sidebar-seam-right: 275px;
+/* mirror of the above for the right sidebar. Stated as "collapsed shuts the seam"
+   rather than "open opens it" so that it matches on exactly the same condition as
+   the left: a :has() rule out-specifies the live-width rules below, so neither may
+   match while a sidebar is mid-resize—and a sidebar is never .is-hidden during its
+   own resize (windowSizing.js flips the class at whichever end keeps the space out
+   of the task area). */
+body:has(.sidebar-right.is-hidden) header {
+  --sidebar-seam-right: 0px;
 }
 
-/* While the left sidebar opens or closes, the window is resizing to make room for
-   it (see windowSizing.js) and --left-sidebar-live is exactly the width the window
-   has gained so far. Everything anchored to the sidebar's edge reads that single
-   value instead of running its own transition, so nothing can drift out of step
-   with the frame. --window-base-width (the window's width without the sidebar) is
-   set on body by windowSizing.js for the duration. */
+/* While a sidebar opens or closes, the window is resizing to make room for it (see
+   windowSizing.js) and --sidebar-live is exactly the width the window has gained so
+   far. Everything anchored to that sidebar's edge reads the single value instead of
+   running its own transition, so nothing can drift out of step with the frame.
+   --window-base-width (the window's width without that sidebar) and
+   --sidebar-target-width (its full width, the ceiling of the clamp) are set on body
+   by windowSizing.js for the duration. */
 body.is-window-sizing {
-  --left-sidebar-live: clamp(0px, 100vw - var(--window-base-width), 220px);
+  --sidebar-live: clamp(0px, 100vw - var(--window-base-width), var(--sidebar-target-width));
 }
 
-body.is-window-sizing header {
-  --sidebar-seam: var(--left-sidebar-live);
+body.is-window-sizing-left header {
+  --sidebar-seam: var(--sidebar-live);
   transition: none;
 }
 
-/* Both follow the sidebar's edge but can't cross into the traffic lights, so each
-   is floored at the position it holds while the sidebar is hidden. */
-body.is-window-sizing .header-left-button {
-  left: max(80px, calc(var(--left-sidebar-live) - 44px));
+body.is-window-sizing-right header {
+  --sidebar-seam-right: var(--sidebar-live);
+  transition: none;
+}
+
+/* Both follow the left sidebar's edge but can't cross into the traffic lights, so
+   each is floored at the position it holds while that sidebar is hidden. Neither
+   moves during a right-sidebar resize—the window grows at its right edge, so
+   nothing to their left shifts. */
+body.is-window-sizing-left .header-left-button {
+  left: max(80px, calc(var(--sidebar-live) - 44px));
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-body.is-window-sizing .offline-message {
-  left: max(118px, calc(var(--left-sidebar-live) + 20px));
+body.is-window-sizing-left .offline-message {
+  left: max(118px, calc(var(--sidebar-live) + 20px));
   transition: none;
 }
 
@@ -66,7 +79,7 @@ header {
   /* seams match the sidebar edges: sidebar color at each end, main content
      color in between, each with a 1px divider continuing the sidebar border */
   --sidebar-seam: 220px;
-  --sidebar-seam-right: 0px;
+  --sidebar-seam-right: 275px;
   background: linear-gradient(
     to right,
     var(--color-bg-sidebar) 0 calc(var(--sidebar-seam) - 1px),

@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('windowControls', {
 // Window sizing uses invoke rather than send: the renderer has to know when the
 // resize has actually landed before it moves on (see windowSizing.js).
 contextBridge.exposeInMainWorld('windowSizing', {
-  setLeftSidebarOpen: (isOpen) => ipcRenderer.invoke('window:setLeftSidebarOpen', isOpen),
+  setSidebarOpen: (side, isOpen) => ipcRenderer.invoke('window:setSidebarOpen', side, isOpen),
 });
 
 // Google Tasks APIs use invoke (request-response) to return data to the renderer.
