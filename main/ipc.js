@@ -1,6 +1,7 @@
-const { ipcMain } = require('electron');
+const { ipcMain, BrowserWindow } = require('electron');
 const auth = require('./auth');
 const googleTasksClient = require('./googleTasksClient');
+const { handleSidebarToggle } = require('./windowAnimator');
 
 // Registers all IPC handlers that the renderer process invokes.
 // Handlers are thin wrappers that delegate to business logic in auth.js and googleTasksClient.js.
@@ -26,6 +27,14 @@ function registerIpcHandlers() {
   ipcMain.handle('auth:getStatus', () => auth.getAuthStatus());
   ipcMain.handle('auth:signIn', () => auth.signIn());
   ipcMain.handle('auth:signOut', () => auth.signOut());
+
+  // Window control handlers
+  ipcMain.handle('window:toggleSidebar', async (event, sidebarId, isNowVisible) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) {
+      await handleSidebarToggle(win, sidebarId, isNowVisible);
+    }
+  });
 
   // Task endpoints return wrapped responses for consistency and future extensibility.
   const client = googleTasksClient;

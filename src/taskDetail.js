@@ -28,6 +28,10 @@ const taskDetailNotesInput = document.getElementById('taskDetailNotes');
 const sidebarRightToggle = makePersistedToggle(sidebarRight, 'sidebarRightHidden');
 function toggleSidebarRight() {
   sidebarRightToggle.toggle();
+  // After toggling, notify the main process to animate the window.
+  // The sidebar is visible if it doesn't have the is-hidden class.
+  const isNowVisible = !sidebarRight.classList.contains('is-hidden');
+  window.windowControls?.toggleSidebar('right', isNowVisible);
 }
 function restoreSidebarRightState() {
   sidebarRightToggle.restore();

@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('windowControls', {
   close: () => ipcRenderer.send('window-control', 'close'),
   minimize: () => ipcRenderer.send('window-control', 'minimize'),
   maximize: () => ipcRenderer.send('window-control', 'maximize'),
+  toggleSidebar: (sidebarId, isNowVisible) => ipcRenderer.invoke('window:toggleSidebar', sidebarId, isNowVisible),
 });
 
 // Google Tasks APIs use invoke (request-response) to return data to the renderer.

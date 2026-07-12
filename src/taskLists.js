@@ -190,6 +190,10 @@ async function selectTaskList(listId) {
 const sidebarLeftToggle = makePersistedToggle(sidebarLeft, 'sidebarLeftHidden');
 function toggleSidebarLeft() {
   sidebarLeftToggle.toggle();
+  // After toggling, notify the main process to animate the window.
+  // The sidebar is visible if it doesn't have the is-hidden class.
+  const isNowVisible = !sidebarLeft.classList.contains('is-hidden');
+  window.windowControls?.toggleSidebar('left', isNowVisible);
 }
 function restoreSidebarLeftState() {
   sidebarLeftToggle.restore();
