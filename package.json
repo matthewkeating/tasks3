@@ -8,6 +8,7 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
+    "deploy": "npm run package && (killall Tasks || true) && rm -rf ~/Applications/Tasks.app && ditto ./out/Tasks-darwin-arm64/Tasks.app ~/Applications/Tasks.app",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
