@@ -15,12 +15,12 @@
     --color-border: #2d2d2d;
     --color-border-strong: #4a4a4a;
     --color-surface-hover: #2d2d2d;
-    --color-surface-active: #0052d2;
-    --color-text-primary: #e0e0e0;
+    --color-surface-active: #404c88;
+    --color-text-primary: #c1c6c6;
     --color-text-strong: #ffffff;
     --color-text-muted: #a0a0a0;
     --color-text-faint: #707070;
-    --color-accent: #0a83fe;
+    --color-accent: #404c88;
     --color-danger: #d63636;
     --color-warning: #eabd16;
     --color-overlay: rgba(0, 0, 0, 0.25);
