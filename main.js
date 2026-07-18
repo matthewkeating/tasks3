@@ -1,7 +1,7 @@
-const { app, BrowserWindow, Menu, nativeTheme, globalShortcut } = require('electron');
+const { app, BrowserWindow, nativeTheme, globalShortcut } = require('electron');
 const path = require('node:path');
 const { registerIpcHandlers } = require('./main/ipc');
-const { buildMenu } = require('./main/menu');
+const { applyApplicationMenu } = require('./main/menu');
 const { loadWindowState, trackWindowState } = require('./main/windowStateStore');
 
 let mainWindow;
@@ -40,7 +40,7 @@ function createWindow () {
   trackWindowState(win, windowState);
 
   win.loadFile('src/index.html')
-  Menu.setApplicationMenu(buildMenu(win))
+  applyApplicationMenu(win)
 
   win.once('ready-to-show', () => {
     win.show();

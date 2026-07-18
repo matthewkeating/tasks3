@@ -11,7 +11,24 @@ const tokenStore = require('./tokenStore');
 // capture the callback on localhost, exchange auth code for tokens, then close the server.
 // Tokens are cached to disk for persistence across app restarts.
 
-const SCOPES = ['https://www.googleapis.com/auth/tasks'];
+// openid+email are requested alongside tasks so the token response carries an
+// id_token whose payload includes the signed-in account's email—surfaced in the
+// app menu (see getUserEmail). Tokens cached before these scopes were added lack
+// the id_token and simply report no email until the user re-authenticates.
+const TASKS_SCOPE = 'https://www.googleapis.com/auth/tasks';
+const SCOPES = [TASKS_SCOPE, 'openid', 'email'];
+
+// Google's granular consent (2023+) lets a user approve the identity scopes while
+// declining Tasks, yielding a token that authenticates but 403s on every Tasks
+// call. Wherever we care whether the app can actually use Tasks, we check the
+// granted scope, not just the presence of a refresh_token. Scope may be absent on
+// tokens minted before we started tracking it—treat unknown as granted so we don't
+// force a needless re-auth on those.
+function hasTasksScope(credentials) {
+  const scope = credentials && credentials.scope;
+  if (scope === undefined || scope === null) return true;
+  return scope.split(' ').includes(TASKS_SCOPE);
+}
 const CREDENTIALS_PATH = path.join(__dirname, '..', 'google-client-secret.json');
 const SIGN_IN_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -98,7 +115,37 @@ function getClient() {
 
 async function getAuthStatus() {
   const c = getClient();
-  return { signedIn: Boolean(c.credentials && c.credentials.refresh_token) };
+  // A token that lacks the Tasks scope can't drive the app, so report it as
+  // signed-out—the renderer then shows the sign-in modal and the user re-consents,
+  // rather than landing in a "signed in but everything 403s" dead end.
+  const signedIn = Boolean(c.credentials && c.credentials.refresh_token) && hasTasksScope(c.credentials);
+  return { signedIn };
+}
+
+// Reads the signed-in account's email from the OpenID id_token obtained during the
+// OAuth exchange. We decode (not cryptographically verify) the JWT payload on purpose:
+// it's our own token, received directly from Google's token endpoint over TLS and
+// stored encrypted, so there's no untrusted issuer to guard against. Returns null when
+// no id_token is present (e.g. a token cached before the email scope was added).
+function getUserEmail() {
+  const c = getClient();
+  const idToken = c.credentials && c.credentials.id_token;
+  if (!idToken) return null;
+  try {
+    const payload = idToken.split('.')[1];
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')).email ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// Synchronous snapshot of auth state for building the native menu (which can't await).
+function getAccountInfo() {
+  const c = getClient();
+  return {
+    signedIn: Boolean(c.credentials && c.credentials.refresh_token),
+    email: getUserEmail(),
+  };
 }
 
 function signIn() {
@@ -146,6 +193,15 @@ function runSignInFlow() {
       try {
         // Exchange authorization code for tokens (access_token + refresh_token).
         const { tokens } = await c.getToken({ code, redirect_uri: redirectUri });
+        // Refuse a partial grant (identity approved, Tasks declined): persisting it
+        // would leave the app authenticated but 403-ing on every Tasks call. Fail the
+        // sign-in instead so the user is told to re-approve with Tasks checked.
+        if (!hasTasksScope(tokens)) {
+          res.writeHead(200, { 'Content-Type': 'text/html' })
+            .end(renderCallbackPage('Access to Google Tasks wasn’t granted. Return to the app and sign in again, allowing Tasks access.'));
+          finish({ ok: false, reason: 'missing_scope' });
+          return;
+        }
         c.setCredentials(tokens);
         tokenStore.saveTokens(tokens);
         res.writeHead(200, { 'Content-Type': 'text/html' })
@@ -194,15 +250,18 @@ function runSignInFlow() {
 
 async function signOut() {
   const c = getClient();
-  try {
-    // Revoke tokens with Google servers; best-effort since this may fail if offline or already revoked.
-    await c.revokeCredentials();
-  } catch {
-    // Ignore revocation failures; clear local credentials regardless.
-  }
+  // Sign-out is local-only: forget the tokens here, but deliberately do NOT call
+  // c.revokeCredentials(). Revoking the grant at Google makes the *next* sign-in's
+  // first consent come back without the tasks scope (confirmed: every token exchange
+  // immediately after a revoke omits tasks; the following retry includes it), so
+  // revoking here produced an "every other login fails" cycle against the
+  // hasTasksScope guard. Leaving the grant intact means each sign-in re-authorizes
+  // against it and reliably gets tasks. Trade-off: the refresh token stays valid at
+  // Google until it expires or the user removes app access in their Google account
+  // security settings—acceptable for a local single-user desktop app.
   c.setCredentials({});
   tokenStore.clearTokens();
   return { ok: true };
 }
 
-module.exports = { getClient, getAuthStatus, signIn, signOut };
+module.exports = { getClient, getAuthStatus, getAccountInfo, signIn, signOut };

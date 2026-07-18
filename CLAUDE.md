@@ -131,6 +131,8 @@ Two invariants make it work, and both are easy to break:
 
 Most IPC calls include try/catch with fallback rendering (e.g., in `loadTasksForSelectedList()`, errors leave previous tasks in place). Add messages to the UI for critical failures (see `loadTaskLists()` retry pattern).
 
+On the main side, `handleTaskCall` (`main/ipc.js`) wraps each task endpoint and returns the fallback shape (e.g. `{ taskLists: [] }`) on **any** thrown error—so a genuine failure is indistinguishable from a real empty result. In particular an auth/permission error (e.g. a `403` from a token missing the `tasks` scope) looks identical to an empty account or an offline blip. **When data comes back unexpectedly empty, check the actual API response before concluding the account is empty**—the emptiness may be a swallowed error. A quick way to see the real result is to run the app's own `main/auth.js` + `main/googleTasksClient.js` against the stored token from a standalone Electron script (the token is `safeStorage`-encrypted, so it needs the Electron runtime, not plain Node, and the app name set to match `userData`).
+
 ### HTML Escaping
 
 User data and API responses enter the DOM via `textContent` (or `.value`), never `innerHTML`—this is inherently XSS-safe, so there's no separate escaping helper to call. `innerHTML` is only ever assigned static, trusted strings (icon markup from `icons.js`, hardcoded UI messages like the sidebar's "Loading lists…").
@@ -165,11 +167,11 @@ To test the app locally:
 
 Tokens are cached in the system's app data folder (via `tokenStore`). Deleting cached tokens forces re-authentication.
 
+**Scopes:** the app requests `tasks` plus `openid` and `email` (`SCOPES` in `main/auth.js`)—the identity scopes are only there to surface the signed-in account's email in the app menu (decoded from the `id_token`; see `getUserEmail`). Because Google uses *granular consent*, a user can approve the identity scopes while declining Tasks, producing a token that authenticates but `403`s on every Tasks call. Two guards handle this: `runSignInFlow` rejects a sign-in whose granted `scope` lacks `tasks` (reason `missing_scope`), and `getAuthStatus` reports a token without the `tasks` scope as signed-out so the renderer re-prompts instead of sitting in a broken "signed in but empty" state (see `hasTasksScope`). Tokens cached before the identity scopes were added simply report no email until the next re-auth.
+
 ## Testing & Verification
 
 **Build verification:** Running `npm start` or `npm run make` to verify builds succeed is encouraged.
-
-**Functionality testing:** Do not run the app to verify UI changes through screenshots or manual interaction. The developer will handle testing app functionality yourself. Focus on code verification (type checking, linting, code review) and confirming builds succeed.
 
 ## Known Limitations & TODOs
 

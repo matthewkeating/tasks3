@@ -97,6 +97,22 @@ function setupMenuListeners() {
   });
   window.appMenu?.onSelectNext(() => selectAdjacentTask(1));
   window.appMenu?.onSelectPrevious(() => selectAdjacentTask(-1));
+  window.appMenu?.onSignOut(() => handleSignOut());
+}
+
+// Clears credentials via the app's signOut IPC, then returns the UI to its
+// signed-out state (empty lists/tasks + the sign-in modal), matching a fresh
+// launch where initGoogleTasks finds signedIn:false. Re-auth happens in-app via
+// the modal's button, so no restart is needed.
+async function handleSignOut() {
+  await window.googleTasks.signOut();
+  taskLists = [];
+  selectedListId = null;
+  tasks = [];
+  renderTaskListTitle();
+  renderSidebarMessage('Signed out.');
+  renderTaskArea();
+  showSigninModal();
 }
 
 // True while focus is inside any input, textarea, or contenteditable region

@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld('appMenu', {
   onDeleteTask: (callback) => ipcRenderer.on('menu:delete-task', callback),
   onSelectNext: (callback) => ipcRenderer.on('menu:select-next', callback),
   onSelectPrevious: (callback) => ipcRenderer.on('menu:select-previous', callback),
+  onSignOut: (callback) => ipcRenderer.on('menu:sign-out', callback),
 });
 
 // The global show/hide shortcut (Cmd+Shift+') lives in main.js, outside the

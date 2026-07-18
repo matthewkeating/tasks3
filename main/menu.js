@@ -1,11 +1,31 @@
 const { Menu } = require('electron');
+const auth = require('./auth');
 
 // Builds the native application menu. Accelerators here are the single source of
 // truth for app-level shortcuts; the renderer's handleGlobalKeydown must not also
 // bind these combos, since a menu accelerator and a DOM keydown both fire independently
 // when the window has focus, causing the underlying action to run twice.
-function buildMenu(win) {
+//
+// `account` ({ signedIn, email }) drives the File menu's identity block. The menu is
+// static native UI built once, so it must be rebuilt (applyApplicationMenu) whenever
+// auth state changes—see the auth:signIn/signOut IPC handlers.
+function buildMenu(win, account = {}) {
   const send = (channel) => () => win.webContents.send(channel);
+  const { signedIn = false, email = null } = account;
+
+  // Only offer Sign Out while actually signed in. The "Signed in as…" line is a
+  // disabled label (identity, not an action) and appears only once the email is
+  // known—so a pre-email-scope token degrades to just Sign Out rather than nothing.
+  const accountItems = signedIn
+    ? [
+        { type: 'separator' },
+        ...(email ? [{ label: `Signed in as ${email}`, enabled: false }] : []),
+        {
+          label: 'Sign Out',
+          click: send('menu:sign-out'),
+        },
+      ]
+    : [];
 
   const template = [
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
@@ -22,6 +42,7 @@ function buildMenu(win) {
           accelerator: 'CmdOrCtrl+Shift+N',
           click: send('menu:new-list'),
         },
+        ...accountItems,
         { type: 'separator' },
         process.platform === 'darwin' ? { role: 'close' } : { role: 'quit' },
       ],
@@ -106,4 +127,11 @@ function buildMenu(win) {
   return Menu.buildFromTemplate(template);
 }
 
-module.exports = { buildMenu };
+// Builds and installs the application menu with the current auth snapshot. Call
+// this at startup and after any auth state change so the File menu's identity
+// block stays in sync (the native menu doesn't re-read state on its own).
+function applyApplicationMenu(win) {
+  Menu.setApplicationMenu(buildMenu(win, auth.getAccountInfo()));
+}
+
+module.exports = { buildMenu, applyApplicationMenu };

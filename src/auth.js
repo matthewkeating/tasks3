@@ -6,6 +6,14 @@ function showSigninModal() {
   if (signinModalOverlay) {
     signinModalOverlay.classList.remove('is-hidden');
   }
+  // Reset the button to its idle state whenever the modal appears. handleSignIn
+  // leaves it disabled/"Signing in…" after a successful sign-in (it just hides the
+  // modal), so re-showing it later—e.g. after Sign Out—would otherwise surface that
+  // stale, unclickable state.
+  if (signinModalBtn) {
+    signinModalBtn.disabled = false;
+    signinModalBtn.textContent = 'Sign in with Google';
+  }
 }
 
 function hideSigninModal() {
@@ -47,7 +55,16 @@ async function handleSignIn() {
     await loadTaskLists();
   } else {
     // Signin failed or cancelled; show error and re-enable button.
-    const reason = result.reason === 'access_denied' ? 'Sign-in was cancelled.' : 'Sign-in timed out.';
+    let reason;
+    if (result.reason === 'access_denied') {
+      reason = 'Sign-in was cancelled.';
+    } else if (result.reason === 'missing_scope') {
+      reason = 'Please allow access to Google Tasks.';
+    } else if (result.reason === 'timeout') {
+      reason = 'Sign-in timed out.';
+    } else {
+      reason = 'Sign-in failed.';
+    }
     if (signinModalBtn) {
       signinModalBtn.disabled = false;
       signinModalBtn.textContent = `Try again: ${reason}`;

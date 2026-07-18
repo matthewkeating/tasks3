@@ -2,6 +2,7 @@ const { ipcMain, BrowserWindow } = require('electron');
 const auth = require('./auth');
 const googleTasksClient = require('./googleTasksClient');
 const sidebarWindowSizer = require('./sidebarWindowSizer');
+const { applyApplicationMenu } = require('./menu');
 
 // Registers all IPC handlers that the renderer process invokes.
 // Handlers are thin wrappers that delegate to business logic in auth.js and googleTasksClient.js.
@@ -31,9 +32,21 @@ function registerIpcHandlers() {
   });
 
   // Auth handlers surface their own errors to the renderer, so they aren't wrapped.
+  // Sign-in/out rebuild the native menu so its "Signed in as…" identity block and
+  // Sign Out item track the current account (the menu doesn't re-read state itself).
   ipcMain.handle('auth:getStatus', () => auth.getAuthStatus());
-  ipcMain.handle('auth:signIn', () => auth.signIn());
-  ipcMain.handle('auth:signOut', () => auth.signOut());
+  ipcMain.handle('auth:signIn', async (event) => {
+    const result = await auth.signIn();
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) applyApplicationMenu(win);
+    return result;
+  });
+  ipcMain.handle('auth:signOut', async (event) => {
+    const result = await auth.signOut();
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win) applyApplicationMenu(win);
+    return result;
+  });
 
   // Task endpoints return wrapped responses for consistency and future extensibility.
   const client = googleTasksClient;
